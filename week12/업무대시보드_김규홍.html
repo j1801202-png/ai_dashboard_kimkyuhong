@@ -40,35 +40,36 @@ import {
   serverTimestamp, Timestamp, limit
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
+// Railway 환경변수에서 주입된 값 (서버가 %%VAR%% 플레이스홀더를 교체)
 const firebaseConfig = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId:             "YOUR_APP_ID"
+  apiKey:            "%%FIREBASE_API_KEY%%",
+  authDomain:        "%%FIREBASE_AUTH_DOMAIN%%",
+  projectId:         "%%FIREBASE_PROJECT_ID%%",
+  storageBucket:     "%%FIREBASE_STORAGE_BUCKET%%",
+  messagingSenderId: "%%FIREBASE_MESSAGING_SENDER_ID%%",
+  appId:             "%%FIREBASE_APP_ID%%"
 };
 
-// EmailJS 설정
-const EMAILJS_PUBLIC_KEY  = "YOUR_EMAILJS_PUBLIC_KEY";
-const EMAILJS_SERVICE_ID  = "YOUR_EMAILJS_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_EMAILJS_TEMPLATE_ID";
+// EmailJS 설정 (Railway 환경변수에서 주입)
+const EMAILJS_PUBLIC_KEY  = "%%EMAILJS_PUBLIC_KEY%%";
+const EMAILJS_SERVICE_ID  = "%%EMAILJS_SERVICE_ID%%";
+const EMAILJS_TEMPLATE_ID = "%%EMAILJS_TEMPLATE_ID%%";
 const DAILY_EMAIL_HOUR    = 17; // KST 17시
 
 // ──────────────────────────────────────────────
 // Firebase 초기화
 // ──────────────────────────────────────────────
 let app, auth, db;
-let IS_CONFIGURED = false;
+// 플레이스홀더가 실제 값으로 교체됐는지 확인
+let IS_CONFIGURED = !firebaseConfig.apiKey.startsWith('%%');
 
 try {
-  if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+  if (IS_CONFIGURED) {
     app  = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db   = getFirestore(app);
-    IS_CONFIGURED = true;
   }
-} catch(e) { console.error("Firebase init error:", e); }
+} catch(e) { console.error("Firebase init error:", e); IS_CONFIGURED = false; }
 
 // ──────────────────────────────────────────────
 // 전역 상태
@@ -88,7 +89,7 @@ let postitsData = {};
 document.addEventListener('DOMContentLoaded', () => {
   initUI();
   if (!IS_CONFIGURED) showSetupBanner();
-  else setupAuth();
+  else { showLogin(); setupAuth(); }
   setupClock();
 });
 
@@ -109,8 +110,9 @@ function initUI() {
   document.getElementById('chatInput').addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
   });
-  // 로그인 버튼
-  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  // 헤더 로그인 버튼 (우상단) + 콘텐츠 영역 오버레이 버튼
+  document.getElementById('headerLoginBtn').addEventListener('click', doLogin);
+  document.getElementById('noAuthMsgBtn').addEventListener('click', doLogin);
   // 로그아웃
   document.getElementById('logoutBtn').addEventListener('click', doLogout);
   // 이메일 테스트
@@ -184,15 +186,17 @@ async function doLogout() {
 }
 
 function showLogin() {
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('appScreen').style.display  = 'none';
+  document.getElementById('headerLoginBtn').style.display = 'flex';
+  document.getElementById('userInfoArea').style.display   = 'none';
+  document.getElementById('noAuthMsg').style.display      = 'flex';
 }
 
 function showApp() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appScreen').style.display   = 'grid';
-  document.getElementById('userAvatar').src   = currentUser.photoURL || '';
-  document.getElementById('userNameChip').textContent = currentUser.displayName || currentUser.email;
+  document.getElementById('headerLoginBtn').style.display = 'none';
+  document.getElementById('userInfoArea').style.display   = 'flex';
+  document.getElementById('noAuthMsg').style.display      = 'none';
+  document.getElementById('userAvatar').src               = currentUser.photoURL || '';
+  document.getElementById('userNameChip').textContent     = currentUser.displayName || currentUser.email;
   document.getElementById('roleChip').textContent =
     currentRole === 'admin' ? '관리자' : currentRole === 'team_lead' ? '팀장' : '팀원';
   if (IS_CONFIGURED && !emailTimerStarted) startEmailTimer();
@@ -870,31 +874,38 @@ input,textarea,select{outline:none;font-family:'Pretendard',sans-serif;font-size
 .setup-box h2{color:var(--mint-deep);margin-bottom:12px}
 .setup-box pre{background:#f5f5f5;border-radius:8px;padding:12px;font-size:11px;overflow-x:auto;margin-top:8px}
 
-/* ── LOGIN SCREEN ── */
-#loginScreen{
-  display:flex;height:100%;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,#c3e3e2 0%,#a8d8d7 50%,#8ecece 100%);
+/* ── 헤더 로그인 버튼 (우상단) ── */
+#headerLoginBtn{
+  display:flex;align-items:center;gap:8px;
+  background:#fff;border:none;border-radius:8px;
+  padding:6px 14px;font-size:12px;font-weight:700;color:var(--text);
+  cursor:pointer;transition:.2s;white-space:nowrap;
 }
-.login-card{
-  background:#fff;border-radius:var(--r);padding:48px;
-  box-shadow:0 20px 60px rgba(51,99,99,.15);text-align:center;width:360px;
+#headerLoginBtn:hover{background:var(--mint-soft);color:var(--mint-deep)}
+.g-icon{width:16px;height:16px;flex-shrink:0}
+
+/* 로그인 후 사용자 정보 영역 */
+#userInfoArea{display:flex;align-items:center;gap:8px}
+
+/* 미인증 상태 콘텐츠 오버레이 */
+#noAuthMsg{
+  display:none;position:absolute;inset:0;z-index:50;
+  background:rgba(195,227,226,.85);backdrop-filter:blur(4px);
+  flex-direction:column;align-items:center;justify-content:center;gap:16px;
 }
-.login-logo{font-size:40px;margin-bottom:12px}
-.login-title{font-size:24px;font-weight:800;color:var(--text);margin-bottom:4px}
-.login-sub{font-size:13px;color:var(--muted);margin-bottom:32px}
-#loginBtn{
-  width:100%;padding:14px;border-radius:10px;
-  background:#fff;border:2px solid var(--line);
-  font-size:14px;font-weight:600;color:var(--text);
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  transition:.2s;
+#noAuthMsg h2{font-size:20px;font-weight:800;color:var(--text)}
+#noAuthMsg p{font-size:13px;color:var(--muted)}
+#noAuthMsgBtn{
+  display:flex;align-items:center;gap:8px;
+  background:#fff;border:2px solid var(--line);border-radius:10px;
+  padding:12px 24px;font-size:14px;font-weight:700;color:var(--text);
+  cursor:pointer;transition:.2s;
 }
-#loginBtn:hover{border-color:var(--mint);background:var(--mint-soft)}
-.g-icon{width:18px;height:18px}
+#noAuthMsgBtn:hover{border-color:var(--mint);background:var(--mint-soft)}
 
 /* ── APP SCREEN ── */
 #appScreen{
-  display:none;height:100%;
+  display:grid;height:100%;
   grid-template-rows:var(--header) 1fr;
   grid-template-columns:var(--sidebar) 1fr;
   grid-template-areas:"header header" "sidebar content";
@@ -1149,23 +1160,28 @@ input,textarea,select{outline:none;font-family:'Pretendard',sans-serif;font-size
 <!-- ── SETUP BANNER ── -->
 <div id="setupBanner">
   <div class="setup-box">
-    <h2>Firebase 설정 필요</h2>
+    <h2>Firebase 환경변수 설정 필요</h2>
     <p style="font-size:13px;color:#555;margin-bottom:12px">
-      이 대시보드를 사용하려면 Firebase 프로젝트 설정이 필요합니다.<br>
-      아래 단계를 따라 설정 후 HTML 파일을 수정하세요.
+      Railway 환경변수에 Firebase 설정값을 입력해야 합니다.<br>
+      아래 단계를 따라 Firebase 프로젝트를 생성하고 Railway에 등록하세요.
     </p>
-    <pre>1. https://console.firebase.google.com 접속
-2. 새 프로젝트 생성 (Google Analytics 선택사항)
-3. Authentication → 시작하기 → Google 로그인 방법 활성화
+    <pre>【Firebase 프로젝트 생성】
+1. https://console.firebase.google.com 접속
+2. 새 프로젝트 생성
+3. Authentication → 시작하기 → Google 로그인 활성화
 4. Firestore Database → 데이터베이스 만들기 (테스트 모드)
-5. 프로젝트 설정(⚙️) → 내 앱 → 웹앱(&lt;/&gt;) 추가
-6. firebaseConfig 코드 복사 → HTML 상단 firebaseConfig 교체
+5. 프로젝트 설정(⚙️) → 웹앱(&lt;/&gt;) 등록 → firebaseConfig 복사
 
-EmailJS (선택):
-1. https://www.emailjs.com 회원가입
-2. Email Services → Gmail 추가
-3. Email Templates → 템플릿 생성
-4. Account → Public Key 복사 → HTML EMAILJS_* 상수 교체</pre>
+【Railway 환경변수 입력】
+FIREBASE_API_KEY          = apiKey 값
+FIREBASE_AUTH_DOMAIN      = authDomain 값
+FIREBASE_PROJECT_ID       = projectId 값
+FIREBASE_STORAGE_BUCKET   = storageBucket 값
+FIREBASE_MESSAGING_SENDER_ID = messagingSenderId 값
+FIREBASE_APP_ID           = appId 값
+
+【EmailJS (선택 - 자동 메일)】
+EMAILJS_PUBLIC_KEY  / EMAILJS_SERVICE_ID / EMAILJS_TEMPLATE_ID</pre>
     <button onclick="document.getElementById('setupBanner').style.display='none'"
       style="margin-top:16px;background:var(--mint);color:#fff;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:700;border:none;cursor:pointer">
       확인 (데모 모드로 계속)
@@ -1173,25 +1189,7 @@ EmailJS (선택):
   </div>
 </div>
 
-<!-- ── LOGIN SCREEN ── -->
-<div id="loginScreen">
-  <div class="login-card">
-    <div class="login-logo">📊</div>
-    <div class="login-title">업무 대시보드</div>
-    <div class="login-sub">김규홍 · AI데이터분석과시각화 12주차</div>
-    <button id="loginBtn">
-      <svg class="g-icon" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-      </svg>
-      Google로 로그인
-    </button>
-  </div>
-</div>
-
-<!-- ── APP SCREEN ── -->
+<!-- ── APP SCREEN (항상 표시) ── -->
 <div id="appScreen">
 
   <!-- HEADER -->
@@ -1203,13 +1201,26 @@ EmailJS (선택):
     <div class="header-stat">권한 <b id="statRole">—</b></div>
     <div class="header-spacer"></div>
     <span id="clock"></span>
-    <button id="emailTestBtn">📧 일일 메일</button>
-    <div class="user-chip">
-      <img id="userAvatar" src="" alt=""/>
-      <span id="userNameChip"></span>
-      <span id="roleChip"></span>
+    <!-- 미로그인 시 표시되는 구글 로그인 버튼 (우상단) -->
+    <button id="headerLoginBtn">
+      <svg class="g-icon" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      Google 로그인
+    </button>
+    <!-- 로그인 후 표시되는 사용자 정보 영역 -->
+    <div id="userInfoArea" style="display:none">
+      <button id="emailTestBtn">📧 일일 메일</button>
+      <div class="user-chip">
+        <img id="userAvatar" src="" alt=""/>
+        <span id="userNameChip"></span>
+        <span id="roleChip"></span>
+      </div>
+      <button id="logoutBtn">로그아웃</button>
     </div>
-    <button id="logoutBtn">로그아웃</button>
   </header>
 
   <!-- SIDEBAR -->
@@ -1226,7 +1237,22 @@ EmailJS (선택):
   </nav>
 
   <!-- CONTENT -->
-  <main class="app-content">
+  <main class="app-content" style="position:relative">
+
+    <!-- 미인증 오버레이 -->
+    <div id="noAuthMsg">
+      <h2>📊 업무 대시보드</h2>
+      <p>Google 계정으로 로그인하면 모든 기능을 사용할 수 있습니다.</p>
+      <button id="noAuthMsgBtn">
+        <svg style="width:18px;height:18px;flex-shrink:0" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Google로 로그인
+      </button>
+    </div>
 
     <!-- HOME -->
     <section id="homeSection" class="section active">

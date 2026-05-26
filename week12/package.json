@@ -1,0 +1,15 @@
+{
+  "name": "dashboard-kimkyuhong-week12",
+  "version": "3.0.0",
+  "description": "업무 대시보드 v3.0 - Firebase + Railway",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
