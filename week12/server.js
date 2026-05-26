@@ -16,6 +16,7 @@ const ENV_MAP = {
   '%%EMAILJS_PUBLIC_KEY%%':           process.env.EMAILJS_PUBLIC_KEY           || '',
   '%%EMAILJS_SERVICE_ID%%':           process.env.EMAILJS_SERVICE_ID           || '',
   '%%EMAILJS_TEMPLATE_ID%%':          process.env.EMAILJS_TEMPLATE_ID          || '',
+  '%%OPENAI_API_KEY%%':               process.env.OPENAI_API_KEY               || '',
 };
 
 const HTML_PATH = path.join(__dirname, '업무대시보드_김규홍.html');
