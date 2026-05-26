@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>업무 대시보드</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --mint:#64c8c5;--mint-deep:#39b6b3;--mint-soft:#e7f7f6;
+      --bg:#c3e3e2;--panel:#f5fbfb;--card:#fff;--line:#d7eceb;
+      --text:#274241;--muted:#6f8887;
+      --shadow:0 8px 28px rgba(51,99,99,.10);
+      --danger:#ff7e66;--warning:#ffb44e;--success:#3bb273;--blue:#5b8def;
+      --radius:16px;--radius-sm:10px;
+      --hdr:54px;--side:72px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden;font-family:'Pretendard',system-ui,sans-serif;color:var(--text)}
+    body{background:linear-gradient(135deg,#b2dedd 0%,#c9eceb 40%,#abd7d6 100%)}
+
+    /* ── App shell ── */
+    .app{display:grid;grid-template-rows:var(--hdr) 1fr;height:100vh;overflow:hidden}
+    .body-row{display:grid;grid-template-columns:var(--side) 1fr;overflow:hidden}
+
+    /* ── Header ── */
+    .header{
+      display:flex;align-items:center;gap:12px;
+      padding:0 20px;
+      background:rgba(255,255,255,.72);
+      border-bottom:1px solid rgba(255,255,255,.6);
+      backdrop-filter:blur(12px);
+      box-shadow:0 2px 12px rgba(51,99,99,.08);
+    }
+    .header .logo{font-size:22px;font-weight:800;color:#274241;letter-spacing:-.04em;display:flex;align-items:center;gap:6px}
+    .hdr-stats{display:flex;gap:6px;flex:1}
+    .hdr-stat{
+      background:rgba(255,255,255,.8);border:1px solid var(--line);border-radius:10px;
+      padding:5px 12px;font-size:11px;font-weight:700;white-space:nowrap;color:var(--text);
+      display:flex;align-items:center;gap:5px;
+    }
+    .hdr-stat .lbl{color:var(--muted);font-weight:500}
+    .hdr-right{display:flex;align-items:center;gap:8px}
+    .clock{font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap}
+    .avatar-chip{
+      display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.85);
+      border:1px solid var(--line);border-radius:999px;padding:4px 12px 4px 4px;cursor:pointer;
+      font-size:12px;font-weight:700;color:var(--text);
+    }
+    .avatar-chip img,.avatar-chip .av-fallback{
+      width:28px;height:28px;border-radius:50%;object-fit:cover;
+      background:linear-gradient(135deg,#d8f3f2,#9ad8d5);
+      display:flex;align-items:center;justify-content:center;font-size:14px;
+    }
+    .role-badge{
+      font-size:10px;font-weight:800;padding:2px 6px;border-radius:999px;
+      background:#fff2ef;color:#c35a42;
+    }
+    .role-badge.admin{background:#e8f9f8;color:#1f7f7c}
+    .role-badge.team_lead{background:#fff8e8;color:#91622d}
+    .btn-sm{
+      font:inherit;background:white;border:1px solid var(--line);border-radius:8px;
+      padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);
+      transition:.15s;
+    }
+    .btn-sm:hover{background:#f0fbfb;border-color:var(--mint)}
+    .btn-sm.primary{background:linear-gradient(180deg,var(--mint),var(--mint-deep));color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(64,190,186,.22)}
+    .btn-sm.danger{background:#fff2ef;color:#c35a42;border-color:#ffd4c8}
+
+    /* ── Sidebar ── */
+    .sidebar{
+      background:linear-gradient(180deg,#54c6c3,#45b7b4);
+      display:flex;flex-direction:column;align-items:center;
+      padding:10px 6px;gap:2px;overflow:hidden;
+    }
+    .nav-btn{
+      width:58px;border:none;background:transparent;color:rgba(255,255,255,.85);
+      border-radius:12px;padding:8px 4px;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;gap:3px;
+      font-size:10px;font-weight:700;transition:.15s;letter-spacing:-.02em;
+    }
+    .nav-btn:hover,.nav-btn.active{background:rgba(255,255,255,.2);color:#fff}
+    .nav-btn .icon{font-size:18px;line-height:1}
+    .sidebar-bottom{margin-top:auto;display:flex;flex-direction:column;gap:2px;width:100%}
+
+    /* ── Main content ── */
+    .main{overflow:hidden;display:flex;flex-direction:column;padding:14px;gap:12px}
+    .section{display:none;flex-direction:column;gap:12px;height:100%;overflow:hidden}
+    .section.active{display:flex}
+
+    /* ── Cards ── */
+    .card{
+      background:rgba(255,255,255,.9);border-radius:var(--radius);
+      border:1px solid rgba(255,255,255,.8);box-shadow:var(--shadow);padding:14px 16px;
+      overflow:hidden;
+    }
+    .card h3{font-size:14px;font-weight:800;margin-bottom:10px;letter-spacing:-.02em}
+    .panel-scroll{overflow-y:auto;flex:1}
+    .panel-scroll::-webkit-scrollbar{width:4px}
+    .panel-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:999px}
+
+    /* ── Grids ── */
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+    .col-6040{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}
+    .col-3cols{display:grid;grid-template-columns:200px 1fr 180px;gap:0}
+
+    /* ── Stat cards ── */
+    .stat-card{
+      background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:14px;padding:12px 14px;
+    }
+    .stat-card .lbl{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px}
+    .stat-card .val{font-size:22px;font-weight:800;letter-spacing:-.03em;line-height:1}
+    .stat-card .sub{font-size:10px;margin-top:5px;color:var(--muted)}
+    .meter{height:5px;background:#eef6f6;border-radius:999px;overflow:hidden;margin-top:6px}
+    .meter span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--mint),var(--mint-deep))}
+
+    /* ── Form elements ── */
+    .inp,select,textarea{
+      font:inherit;width:100%;padding:8px 10px;border-radius:9px;
+      border:1px solid var(--line);background:#fff;color:var(--text);outline:none;font-size:13px;
+      transition:.15s;
+    }
+    .inp:focus,select:focus,textarea:focus{border-color:var(--mint);box-shadow:0 0 0 3px rgba(100,200,197,.15)}
+    textarea{min-height:72px;resize:vertical}
+    .form-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px}
+    .form-row .inp,.form-row select{flex:1;min-width:0}
+    label.lbl{font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px}
+
+    /* ── Lists ── */
+    .list-item{
+      background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;
+      display:flex;align-items:center;gap:10px;margin-bottom:6px;
+      transition:.15s;
+    }
+    .list-item:hover{border-color:var(--mint-soft)}
+    .list-item.done .item-title{text-decoration:line-through;color:#9eb2b1}
+    .item-title{font-weight:700;font-size:13px;flex:1;min-width:0}
+    .item-meta{font-size:11px;color:var(--muted);margin-top:2px}
+    .item-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+
+    /* ── Badges ── */
+    .badge{
+      display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;
+      font-size:10px;font-weight:800;white-space:nowrap;
+    }
+    .badge.high{background:#fff1ef;color:#c6523a}
+    .badge.mid{background:#fff6e4;color:#9a6b29}
+    .badge.low{background:#eefbf4;color:#317956}
+    .badge.info{background:#eef7ff;color:#3464b0}
+    .badge.warn{background:#fff8e8;color:#91622d}
+    .badge.ok{background:#eefbf4;color:#24724d}
+
+    /* ── Chips ── */
+    .chip{
+      background:var(--mint-soft);color:#247270;border:none;
+      padding:5px 10px;border-radius:999px;font-weight:700;font-size:11px;cursor:pointer;font:inherit;
+      transition:.15s;
+    }
+    .chip.active{background:var(--mint);color:#fff}
+    .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+
+    /* ── Calendar ── */
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+    .cal-head-cell{text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:4px 0}
+    .cal-day{
+      min-height:72px;background:#fff;border:1px solid var(--line);border-radius:10px;
+      padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:3px;transition:.15s;
+    }
+    .cal-day:hover{border-color:var(--mint)}
+    .cal-day.out{opacity:.35}
+    .cal-day.today{background:#f0fffe;border-color:var(--mint)}
+    .cal-day.selected{border-color:var(--mint-deep);box-shadow:inset 0 0 0 2px rgba(57,182,179,.2)}
+    .cal-day .dn{font-weight:800;font-size:11px}
+    .ev-pill{font-size:10px;padding:2px 5px;border-radius:5px;background:#eef9f9;color:#256463;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #daf0ef}
+    .ev-pill.high{background:#fff2ef;color:#c35a42;border-color:#ffd4c8}
+    .ev-pill.mid{background:#fff8e8;color:#91622d;border-color:#ffe2a5}
+    .ev-pill.low{background:#eefbf4;color:#24724d;border-color:#cdeedb}
+
+    /* ── Chat ── */
+    .chat-wrap{display:grid;grid-template-columns:180px 1fr 160px;height:100%;overflow:hidden}
+    .chat-channels{border-right:1px solid var(--line);padding:10px 6px;overflow-y:auto;background:rgba(255,255,255,.5)}
+    .ch-item{
+      padding:7px 10px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:700;
+      color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:2px;transition:.15s;
+    }
+    .ch-item:hover,.ch-item.active{background:rgba(100,200,197,.15);color:var(--mint-deep)}
+    .ch-item .unread{margin-left:auto;background:var(--danger);color:#fff;border-radius:999px;font-size:9px;padding:1px 5px;font-weight:800}
+    .chat-main{display:flex;flex-direction:column;overflow:hidden}
+    .chat-hdr{padding:10px 14px;border-bottom:1px solid var(--line);font-weight:800;font-size:13px;background:rgba(255,255,255,.5)}
+    .chat-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+    .chat-msgs::-webkit-scrollbar{width:4px}
+    .chat-msgs::-webkit-scrollbar-thumb{background:var(--line);border-radius:999px}
+    .msg-bubble{display:flex;gap:8px;align-items:flex-start}
+    .msg-bubble.mine{flex-direction:row-reverse}
+    .msg-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#d8f3f2,#9ad8d5);display:grid;place-items:center;font-size:12px;flex-shrink:0;overflow:hidden}
+    .msg-av img{width:100%;height:100%;object-fit:cover}
+    .msg-body{max-width:72%}
+    .msg-name{font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px}
+    .msg-text{
+      background:#fff;border:1px solid var(--line);border-radius:12px 12px 12px 4px;
+      padding:8px 11px;font-size:12px;line-height:1.5;word-break:break-word;
+    }
+    .msg-bubble.mine .msg-text{background:linear-gradient(135deg,#d2f3f2,#c0edec);border:none;border-radius:12px 12px 4px 12px}
+    .msg-time{font-size:9px;color:var(--muted);margin-top:3px}
+    .chat-input{padding:10px;border-top:1px solid var(--line);display:flex;gap:8px;background:rgba(255,255,255,.7)}
+    .chat-members{border-left:1px solid var(--line);padding:10px 6px;overflow-y:auto;background:rgba(255,255,255,.5)}
+    .member-item{display:flex;align-items:center;gap:7px;padding:5px 6px;font-size:11px;font-weight:600;border-radius:8px;margin-bottom:2px}
+    .member-item .dot{width:7px;height:7px;border-radius:50%;background:var(--success);flex-shrink:0}
+    .typing-ind{font-size:10px;color:var(--muted);padding:4px 14px;min-height:18px}
+
+    /* ── Post-its ── */
+    .postit-board{position:relative;flex:1;overflow:hidden;background:rgba(255,255,255,.25);border-radius:14px;border:1px dashed #c0dedd}
+    .postit-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+    .postit{
+      position:absolute;border-radius:12px;padding:10px;
+      box-shadow:3px 4px 16px rgba(0,0,0,.14);
+      min-width:160px;max-width:240px;cursor:move;user-select:none;
+    }
+    .postit-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;cursor:move}
+    .postit-hdr .drag-handle{font-size:13px;color:rgba(0,0,0,.3)}
+    .postit textarea{
+      background:transparent;border:none;resize:none;width:100%;font-size:12px;
+      font-family:inherit;line-height:1.5;min-height:80px;outline:none;
+      color:rgba(0,0,0,.75);
+    }
+    .color-swatch{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:.15s}
+    .color-swatch:hover,.color-swatch.active{border-color:#274241;transform:scale(1.15)}
+
+    /* ── Bars (workload) ── */
+    .bar-wrap{display:flex;align-items:flex-end;gap:12px;height:100px;padding-top:8px}
+    .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+    .bar-bg{width:100%;max-width:32px;height:80px;border-radius:8px 8px 4px 4px;background:#e8f6f5;position:relative;overflow:hidden}
+    .bar-fill{position:absolute;left:0;right:0;bottom:0;border-radius:inherit;transition:.4s ease}
+    .bar-col .bar-lbl{font-size:10px;color:var(--muted)}
+    .bar-col .bar-pct{font-size:11px;font-weight:800}
+
+    /* ── KPI ── */
+    .kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+    .kpi .kpi-lbl{font-size:10px;color:var(--muted);font-weight:600}
+    .kpi .kpi-val{font-size:20px;font-weight:800;margin:3px 0}
+
+    /* ── Team ── */
+    .user-row{display:grid;grid-template-columns:36px 1fr auto auto;gap:10px;align-items:center;padding:8px 10px;background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:6px}
+    .user-av{width:32px;height:32px;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,#d8f3f2,#9ad8d5);display:grid;place-items:center;font-size:14px;overflow:hidden}
+    .user-av img{width:100%;height:100%;object-fit:cover}
+
+    /* ── AI chat ── */
+    .ai-chat-box{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0}
+    .ai-msg{padding:10px 12px;border-radius:12px;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+    .ai-msg.user{background:#ecfbfb;border:1px solid #cef0ef;text-align:right}
+    .ai-msg.assistant{background:#fff;border:1px solid var(--line)}
+    .ai-role{font-size:10px;font-weight:800;color:var(--muted);margin-bottom:3px}
+
+    /* ── Settlement ── */
+    .settle-charts{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1;overflow:hidden}
+    .chart-box{position:relative;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+    .chart-box canvas{max-height:160px}
+
+    /* ── Table ── */
+    .tbl{width:100%;border-collapse:collapse;font-size:12px}
+    .tbl th{color:var(--muted);font-size:11px;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+    .tbl td{padding:7px 8px;border-bottom:1px solid #f2f9f9}
+    .tbl tr:hover td{background:#f8fefe}
+
+    /* ── Empty ── */
+    .empty{padding:16px;text-align:center;color:var(--muted);font-size:12px;border:1px dashed var(--line);border-radius:10px;background:#fbffff}
+    .hint{padding:10px 12px;border-radius:10px;background:#f1fbfb;border:1px dashed #bfe4e2;color:#386b69;font-size:11px;line-height:1.6}
+
+    /* ── scrollbars global ── */
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-thumb{background:rgba(100,200,197,.3);border-radius:999px}
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ─── HEADER ─────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="logo">👑 <span>업무 대시보드</span></div>
+    <div class="hdr-stats">
+      <div class="hdr-stat"><span class="lbl">이번주</span> <b id="h-week">0건</b></div>
+      <div class="hdr-stat"><span class="lbl">할 일</span> <b id="h-todo">0개</b></div>
+      <div class="hdr-stat"><span class="lbl">휴가</span> <b id="h-vac">0일</b></div>
+      <div class="hdr-stat"><span class="lbl">카드</span> <b id="h-card">₩0</b></div>
+      <div class="hdr-stat"><span class="lbl">팀원</span> <b id="h-team">0명</b></div>
+    </div>
+    <div class="hdr-right">
+      <div class="clock" id="clock"></div>
+      <button class="btn-sm" id="emailTestBtn" title="일일결산 이메일 발송">📧 결산메일</button>
+      <div class="avatar-chip" id="userChip">
+        <div class="av-fallback" id="userAv">👤</div>
+        <span id="userName">로딩중</span>
+        <span class="role-badge" id="roleBadge">-</span>
+      </div>
+      <a href="/auth/logout" class="btn-sm danger">로그아웃</a>
+    </div>
+  </header>
+
+  <div class="body-row">
+    <!-- ─── SIDEBAR ──────────────────────────────────────────────────── -->
+    <aside class="sidebar">
+      <div id="navMenu"></div>
+      <div class="sidebar-bottom">
+        <button class="nav-btn" id="saveBtn" title="수동 저장"><span class="icon">💾</span><span>저장</span></button>
+      </div>
+    </aside>
+
+    <!-- ─── MAIN ─────────────────────────────────────────────────────── -->
+    <main class="main">
+
+      <!-- ══ 홈 ══════════════════════════════════════════════════════════ -->
+      <section class="section active" id="homeSection">
+        <div class="g5" style="flex-shrink:0">
+          <div class="stat-card">
+            <div class="lbl">이번 주 일정</div>
+            <div class="val" id="s-weekEvt">0건</div>
+            <div class="sub">일정 누락 방지</div>
+          </div>
+          <div class="stat-card">
+            <div class="lbl">진행 중 할 일</div>
+            <div class="val" id="s-openTask">0개</div>
+            <div class="meter"><span id="s-taskMtr" style="width:0%"></span></div>
+          </div>
+          <div class="stat-card">
+            <div class="lbl">완료율</div>
+            <div class="val" id="s-rate">0%</div>
+            <div class="meter"><span id="s-rateMtr" style="width:0%"></span></div>
+          </div>
+          <div class="stat-card">
+            <div class="lbl">출장 대기</div>
+            <div class="val" id="s-trip">0건</div>
+            <div class="sub">승인 필요</div>
+          </div>
+          <div class="stat-card">
+            <div class="lbl">비품 부족</div>
+            <div class="val" id="s-stock">0개</div>
+            <div class="sub">재고 확인 필요</div>
+          </div>
+        </div>
+        <div class="g3" style="flex:1;overflow:hidden">
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <h3 style="margin:0">다가오는 일정</h3>
+              <button class="chip" onclick="nav('calendar')">+ 일정 추가</button>
+            </div>
+            <div class="panel-scroll" id="upcomingList"></div>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <h3 style="margin:0">우선순위 할 일</h3>
+              <button class="chip" onclick="nav('todo')">+ 추가</button>
+            </div>
+            <div class="panel-scroll" id="priorityTaskList"></div>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <h3>업무 비중</h3>
+            <div id="homeWorkloadBars" class="bar-wrap"></div>
+            <div style="margin-top:10px">
+              <div class="lbl" style="font-size:10px;color:var(--muted);margin-bottom:4px">카드 인사이트</div>
+              <div class="hint" id="homeCardInsight" style="font-size:11px">카드 데이터를 분석하면 여기에 표시됩니다.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 캘린더 ══════════════════════════════════════════════════════ -->
+      <section class="section" id="calendarSection">
+        <div class="col-6040" style="flex:1;overflow:hidden">
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <div style="display:flex;gap:6px;align-items:center">
+                <button class="btn-sm" id="prevMonth">◀</button>
+                <h3 id="calTitle" style="margin:0;font-size:15px"></h3>
+                <button class="btn-sm" id="nextMonth">▶</button>
+              </div>
+              <button class="btn-sm primary" id="goTodayBtn">오늘</button>
+            </div>
+            <div class="cal-grid" style="flex-shrink:0">
+              <div class="cal-head-cell">일</div><div class="cal-head-cell">월</div>
+              <div class="cal-head-cell">화</div><div class="cal-head-cell">수</div>
+              <div class="cal-head-cell">목</div><div class="cal-head-cell">금</div>
+              <div class="cal-head-cell">토</div>
+            </div>
+            <div class="cal-grid panel-scroll" id="calDays" style="flex:1;align-content:start"></div>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <h3>일정 등록</h3>
+            <div class="form-row">
+              <div style="flex:1"><label class="lbl">날짜</label><input class="inp" id="evDate" type="date"/></div>
+              <div style="flex:1"><label class="lbl">우선순위</label>
+                <select id="evPri"><option value="high">높음</option><option value="mid" selected>보통</option><option value="low">낮음</option></select>
+              </div>
+            </div>
+            <div style="margin-bottom:8px"><label class="lbl">제목</label><input class="inp" id="evTitle" placeholder="예: 광고주 정기 미팅"/></div>
+            <div style="margin-bottom:8px"><label class="lbl">담당자 배정</label>
+              <select id="evAssign"><option value="">본인</option></select>
+            </div>
+            <div style="margin-bottom:8px"><label class="lbl">메모</label><textarea id="evNote" placeholder="회의 링크, 장소 등"></textarea></div>
+            <div class="form-row">
+              <button class="btn-sm primary" id="saveEvBtn">일정 저장</button>
+              <button class="btn-sm" id="resetEvBtn">초기화</button>
+            </div>
+            <hr style="border:none;border-top:1px solid var(--line);margin:10px 0"/>
+            <div style="font-size:12px;font-weight:800;color:var(--muted)" id="selDateLbl">날짜를 선택하세요</div>
+            <div class="panel-scroll" id="evListForDay" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ To-do ══════════════════════════════════════════════════════ -->
+      <section class="section" id="todoSection">
+        <div class="col-6040" style="flex:1;overflow:hidden">
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <h3>할 일 목록</h3>
+            <div style="margin-bottom:8px">
+              <div class="form-row">
+                <input class="inp" id="taskTitle" placeholder="새 할 일 입력"/>
+                <input class="inp" id="taskDue" type="date" style="max-width:140px"/>
+              </div>
+              <div class="form-row">
+                <select id="taskPri"><option value="high">높음</option><option value="mid" selected>보통</option><option value="low">낮음</option></select>
+                <select id="taskAssign"><option value="">담당자 배정</option></select>
+                <input class="inp" id="taskOwner" placeholder="담당자 이름" style="max-width:130px"/>
+                <button class="btn-sm primary" id="addTaskBtn">추가</button>
+              </div>
+            </div>
+            <div class="chip-row">
+              <button class="chip active taskFilter" data-f="all">전체</button>
+              <button class="chip taskFilter" data-f="open">진행중</button>
+              <button class="chip taskFilter" data-f="done">완료</button>
+              <button class="chip taskFilter" data-f="high">긴급</button>
+            </div>
+            <div class="panel-scroll" id="taskList"></div>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <h3>오늘 마감 임박</h3>
+            <div class="panel-scroll" id="deadlineList" style="flex:1"></div>
+            <hr style="border:none;border-top:1px solid var(--line);margin:10px 0"/>
+            <h3>실행 팁</h3>
+            <div class="hint">
+              ① 일정 → 캘린더에 먼저 입력<br>
+              ② 후속 작업 → To-do로 분리<br>
+              ③ 마감 + 담당자를 함께 기록<br>
+              ④ 완료 체크 시 완료율 즉시 반영
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 채팅 ══════════════════════════════════════════════════════ -->
+      <section class="section" id="chatSection">
+        <div class="card" style="flex:1;display:flex;flex-direction:column;overflow:hidden;padding:0">
+          <div class="chat-wrap">
+            <div class="chat-channels">
+              <div style="font-size:10px;font-weight:800;color:var(--muted);padding:6px 6px 8px;letter-spacing:.05em">채널</div>
+              <div id="channelList"></div>
+              <div style="font-size:10px;font-weight:800;color:var(--muted);padding:12px 6px 8px;letter-spacing:.05em">팀 DM</div>
+              <div id="dmList"></div>
+            </div>
+            <div class="chat-main">
+              <div class="chat-hdr" id="chatHdr"># general</div>
+              <div class="chat-msgs" id="chatMsgs"></div>
+              <div class="typing-ind" id="typingInd"></div>
+              <div class="chat-input">
+                <input class="inp" id="chatInput" placeholder="메시지 입력 (Enter 전송)"/>
+                <button class="btn-sm primary" id="sendChatBtn">전송</button>
+              </div>
+            </div>
+            <div class="chat-members">
+              <div style="font-size:10px;font-weight:800;color:var(--muted);padding:6px 0 8px;letter-spacing:.05em">팀원</div>
+              <div id="memberList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 포스트잇 ══════════════════════════════════════════════════ -->
+      <section class="section" id="postitSection">
+        <div class="postit-toolbar">
+          <button class="btn-sm primary" id="addPostitBtn">+ 포스트잇 추가</button>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span style="font-size:11px;color:var(--muted);font-weight:600">색상:</span>
+            <div class="color-swatch active" data-color="#fff3a3" style="background:#fff3a3" title="노랑"></div>
+            <div class="color-swatch" data-color="#d4f5e9" style="background:#d4f5e9" title="초록"></div>
+            <div class="color-swatch" data-color="#fde8e8" style="background:#fde8e8" title="빨강"></div>
+            <div class="color-swatch" data-color="#e8eafd" style="background:#e8eafd" title="파랑"></div>
+            <div class="color-swatch" data-color="#fde8f8" style="background:#fde8f8" title="보라"></div>
+            <div class="color-swatch" data-color="#e8f5fd" style="background:#e8f5fd" title="하늘"></div>
+          </div>
+          <span style="font-size:11px;color:var(--muted)">드래그로 이동, 클릭해서 편집</span>
+        </div>
+        <div class="postit-board" id="postitBoard"></div>
+      </section>
+
+      <!-- ══ 운영관리 ══════════════════════════════════════════════════ -->
+      <section class="section" id="opsSection">
+        <div class="g2" style="flex:1;overflow:hidden">
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <h3>비품 관리</h3>
+            <div class="form-row" style="flex-shrink:0">
+              <input class="inp" id="assetName" placeholder="비품명"/>
+              <input class="inp" id="assetQty" type="number" min="0" placeholder="수량" style="max-width:80px"/>
+              <input class="inp" id="assetMin" type="number" min="0" placeholder="최소" style="max-width:80px"/>
+              <input class="inp" id="assetOwner" placeholder="담당" style="max-width:100px"/>
+              <select id="assetStatus" style="max-width:110px"><option>정상</option><option>보충 필요</option><option>수리 필요</option></select>
+              <button class="btn-sm primary" id="addAssetBtn">추가</button>
+            </div>
+            <div class="panel-scroll" id="assetList"></div>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <h3>출장 신청</h3>
+            <div class="form-row" style="flex-shrink:0">
+              <input class="inp" id="tripPurpose" placeholder="출장 목적"/>
+              <input class="inp" id="tripDest" placeholder="출장지" style="max-width:120px"/>
+            </div>
+            <div class="form-row" style="flex-shrink:0">
+              <input class="inp" id="tripStart" type="date"/>
+              <input class="inp" id="tripEnd" type="date"/>
+              <select id="tripStatus"><option>승인 대기</option><option>승인 완료</option><option>반려</option></select>
+            </div>
+            <div style="margin-bottom:8px;flex-shrink:0"><textarea id="tripMemo" placeholder="예산, 교통, 미팅 대상 등"></textarea></div>
+            <button class="btn-sm primary" id="addTripBtn" style="flex-shrink:0;align-self:flex-start">출장 신청</button>
+            <div class="panel-scroll" id="tripList" style="margin-top:8px"></div>
+          </div>
+        </div>
+        <div class="g2" style="flex-shrink:0">
+          <div class="card">
+            <h3>휴가 잔여일</h3>
+            <div class="form-row">
+              <div><label class="lbl">총 연차</label><input class="inp" id="vacTotal" type="number" step="0.5" placeholder="15"/></div>
+              <div><label class="lbl">사용 연차</label><input class="inp" id="vacUsed" type="number" step="0.5" placeholder="0"/></div>
+              <button class="btn-sm primary" id="saveVacBtn" style="align-self:flex-end">저장</button>
+            </div>
+            <div class="kpi" style="margin-top:6px">
+              <div class="kpi-lbl">잔여</div>
+              <div class="kpi-val" id="vacRemain">0일</div>
+              <div class="meter"><span id="vacMtr" style="width:0%"></span></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>운영 메모</h3>
+            <textarea id="opsMemo" placeholder="운영 메모를 남겨두세요" style="height:70px"></textarea>
+            <button class="btn-sm primary" id="saveOpsMemoBtn" style="margin-top:6px">저장</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 카드분석 ══════════════════════════════════════════════════ -->
+      <section class="section" id="cardSection">
+        <div class="g2" style="flex:1;overflow:hidden">
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <h3>법인카드 사용내역 분석</h3>
+            <div class="hint" style="margin-bottom:8px;flex-shrink:0">CSV 형식: date,merchant,category,amount</div>
+            <div class="form-row" style="flex-shrink:0">
+              <input class="inp" id="cardFile" type="file" accept=".csv,.json"/>
+              <button class="btn-sm primary" id="analyzeCardBtn">분석</button>
+            </div>
+            <div class="chip-row" style="flex-shrink:0">
+              <button class="chip sampleBtn" data-s="month">월간 샘플</button>
+              <button class="chip sampleBtn" data-s="quarter">분기 샘플</button>
+              <button class="chip sampleBtn" data-s="year">연간 샘플</button>
+            </div>
+            <div class="hint" id="cardInsight" style="flex-shrink:0">데이터를 업로드하거나 샘플 버튼을 눌러주세요.</div>
+            <div class="g2" style="flex-shrink:0;margin-top:8px">
+              <div class="kpi"><div class="kpi-lbl">총 사용액</div><div class="kpi-val" id="cardTotal">₩0</div></div>
+              <div class="kpi"><div class="kpi-lbl">평균 결제액</div><div class="kpi-val" id="cardAvg">₩0</div></div>
+            </div>
+            <div style="flex:1;overflow:hidden;margin-top:10px;position:relative">
+              <canvas id="cardBarChart"></canvas>
+            </div>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <div style="height:200px;position:relative;flex-shrink:0">
+              <canvas id="cardDoughnut"></canvas>
+            </div>
+            <h3 style="margin-top:10px">카테고리별 지출</h3>
+            <div class="panel-scroll" id="catList" style="flex:1"></div>
+            <h3 style="margin-top:8px">반복 가맹점</h3>
+            <div id="merchantList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 결산 ══════════════════════════════════════════════════════ -->
+      <section class="section" id="settleSection">
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <div class="chip-row" style="margin:0">
+            <button class="chip active settlePeriod" data-p="daily">일별</button>
+            <button class="chip settlePeriod" data-p="weekly">주별</button>
+            <button class="chip settlePeriod" data-p="monthly">월별</button>
+            <button class="chip settlePeriod" data-p="quarterly">분기</button>
+            <button class="chip settlePeriod" data-p="annual">연간</button>
+          </div>
+          <input class="inp" id="settleDate" type="date" style="max-width:160px"/>
+          <button class="btn-sm primary" id="loadSettleBtn">조회</button>
+          <button class="btn-sm" id="sendSummaryBtn">📧 이메일 발송</button>
+          <div id="settleRange" style="font-size:11px;color:var(--muted);margin-left:6px"></div>
+        </div>
+        <div class="g3" style="flex-shrink:0">
+          <div class="kpi"><div class="kpi-lbl">기간 내 일정</div><div class="kpi-val" id="st-events">0건</div></div>
+          <div class="kpi"><div class="kpi-lbl">업무 완료율</div><div class="kpi-val" id="st-rate">0%</div><div class="meter" style="margin-top:4px"><span id="st-rateMtr" style="width:0%"></span></div></div>
+          <div class="kpi"><div class="kpi-lbl">카드 총 지출</div><div class="kpi-val" id="st-spend">₩0</div></div>
+        </div>
+        <div class="settle-charts">
+          <div class="chart-box">
+            <div style="font-size:12px;font-weight:800;margin-bottom:8px">지출 추이</div>
+            <canvas id="trendChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <div style="font-size:12px;font-weight:800;margin-bottom:8px">카테고리 비중</div>
+            <canvas id="settleDonut"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 팀관리 ══════════════════════════════════════════════════ -->
+      <section class="section" id="teamSection">
+        <div class="g2" style="flex:1;overflow:hidden">
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <h3>팀원 관리</h3>
+            <div class="hint" style="flex-shrink:0;margin-bottom:8px">관리자만 역할을 변경할 수 있습니다.</div>
+            <div class="panel-scroll" id="teamUserList"></div>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <h3>팀 업무 현황</h3>
+            <div class="panel-scroll" id="teamTaskOverview"></div>
+            <hr style="border:none;border-top:1px solid var(--line);margin:10px 0"/>
+            <h3>일정 배정 현황</h3>
+            <div class="panel-scroll" id="teamEventOverview"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ AI 도우미 ══════════════════════════════════════════════ -->
+      <section class="section" id="aiSection">
+        <div class="g2" style="flex:1;overflow:hidden">
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0">
+              <h3 style="margin:0">🤖 업무 AI 어시스턴트</h3>
+            </div>
+            <div class="chip-row" style="flex-shrink:0">
+              <button class="chip workPrompt">회의 요약 작성</button>
+              <button class="chip workPrompt">외부 응대 메일 초안</button>
+              <button class="chip workPrompt">오늘 우선순위 추천</button>
+              <button class="chip workPrompt">문서 외주 브리프</button>
+            </div>
+            <div class="ai-chat-box panel-scroll" id="workChat"></div>
+            <div class="form-row" style="flex-shrink:0;margin-top:8px">
+              <input class="inp" id="workInput" placeholder="업무 관련 요청을 입력하세요"/>
+              <button class="btn-sm primary" id="sendWorkBtn">전송</button>
+            </div>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0">
+              <h3 style="margin:0">⚖️ AI 법률 어시스턴트</h3>
+            </div>
+            <div class="chip-row" style="flex-shrink:0">
+              <button class="chip lawPrompt">계약서 검토 체크리스트</button>
+              <button class="chip lawPrompt">NDA 핵심 조항</button>
+              <button class="chip lawPrompt">업무위탁 리스크</button>
+              <button class="chip lawPrompt">개인정보 위탁 점검</button>
+            </div>
+            <div class="ai-chat-box panel-scroll" id="lawChat"></div>
+            <div class="form-row" style="flex-shrink:0;margin-top:8px">
+              <input class="inp" id="lawInput" placeholder="법률 검토가 필요한 내용을 입력하세요"/>
+              <button class="btn-sm primary" id="sendLawBtn">전송</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div><!-- body-row -->
+</div><!-- app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════════════════════════
+const NAV = [
+  {id:'home',  icon:'🏠', label:'홈'},
+  {id:'calendar', icon:'🗓️', label:'캘린더'},
+  {id:'todo',  icon:'✅', label:'할 일'},
+  {id:'chat',  icon:'💬', label:'채팅'},
+  {id:'postit',icon:'📌', label:'포스트잇'},
+  {id:'ops',   icon:'🧰', label:'운영'},
+  {id:'card',  icon:'💳', label:'카드'},
+  {id:'settle',icon:'📊', label:'결산'},
+  {id:'team',  icon:'👥', label:'팀관리'},
+  {id:'ai',    icon:'🤖', label:'AI'}
+];
+const CHANNELS = ['general','project','announcement'];
+const POSTIT_COLORS = ['#fff3a3','#d4f5e9','#fde8e8','#e8eafd','#fde8f8','#e8f5fd'];
+const SAMPLE = {
+  month:[
+    {date:'2026-05-02',merchant:'스타카페',category:'식비',amount:8300},
+    {date:'2026-05-03',merchant:'패스트프린트',category:'인쇄/비품',amount:45200},
+    {date:'2026-05-04',merchant:'KTX',category:'교통',amount:59800},
+    {date:'2026-05-04',merchant:'네이버클라우드',category:'SaaS',amount:120000},
+    {date:'2026-05-06',merchant:'스타카페',category:'식비',amount:11200},
+    {date:'2026-05-09',merchant:'오피스마트',category:'인쇄/비품',amount:76000},
+    {date:'2026-05-12',merchant:'택시',category:'교통',amount:19400},
+    {date:'2026-05-15',merchant:'외주디자인랩',category:'외주비',amount:450000},
+    {date:'2026-05-15',merchant:'스타카페',category:'식비',amount:9100},
+    {date:'2026-05-18',merchant:'미팅룸예약',category:'회의',amount:88000}
+  ],
+  quarter:[
+    {date:'2026-03-07',merchant:'오피스마트',category:'인쇄/비품',amount:93000},
+    {date:'2026-03-18',merchant:'미팅룸예약',category:'회의',amount:124000},
+    {date:'2026-04-03',merchant:'KTX',category:'교통',amount:64800},
+    {date:'2026-04-09',merchant:'외주디자인랩',category:'외주비',amount:520000},
+    {date:'2026-04-14',merchant:'스타카페',category:'식비',amount:16700},
+    {date:'2026-05-02',merchant:'스타카페',category:'식비',amount:8300},
+    {date:'2026-05-09',merchant:'오피스마트',category:'인쇄/비품',amount:76000},
+    {date:'2026-05-15',merchant:'외주디자인랩',category:'외주비',amount:450000},
+    {date:'2026-05-18',merchant:'미팅룸예약',category:'회의',amount:88000}
+  ],
+  year:[
+    {date:'2026-01-09',merchant:'외주디자인랩',category:'외주비',amount:600000},
+    {date:'2026-01-22',merchant:'클라우드워크',category:'SaaS',amount:98000},
+    {date:'2026-02-11',merchant:'오피스마트',category:'인쇄/비품',amount:45000},
+    {date:'2026-02-27',merchant:'KTX',category:'교통',amount:105000},
+    {date:'2026-03-05',merchant:'스타카페',category:'식비',amount:12100},
+    {date:'2026-03-17',merchant:'미팅룸예약',category:'회의',amount:117000},
+    {date:'2026-04-09',merchant:'외주디자인랩',category:'외주비',amount:520000},
+    {date:'2026-04-22',merchant:'오피스마트',category:'인쇄/비품',amount:78000},
+    {date:'2026-05-15',merchant:'외주디자인랩',category:'외주비',amount:450000},
+    {date:'2026-05-18',merchant:'미팅룸예약',category:'회의',amount:88000},
+    {date:'2026-06-03',merchant:'클라우드워크',category:'SaaS',amount:98000},
+    {date:'2026-06-09',merchant:'택시',category:'교통',amount:21400}
+  ]
+};
+
+const CHART_COLORS = ['#64c8c5','#ffb44e','#5b8def','#ff7e66','#3bb273','#a78bfa','#f472b6','#34d399'];
+
+let me = null, allUsers = [], currentSection = 'home';
+let calCursor = new Date(), selDate = todayISO();
+let taskFilter = 'all', currentChannel = 'general';
+let selectedPostitColor = '#fff3a3';
+let cardDoughnutChart = null, cardBarChart = null, trendChart = null, settleDonut = null;
+let typingTimer = null;
+let workHistory = [], lawHistory = [];
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const fmt = n => '₩' + Number(n||0).toLocaleString('ko-KR');
+const fmtDate = d => { const x=new Date(d); return isNaN(x)?d:x.toLocaleDateString('ko-KR',{month:'short',day:'numeric',weekday:'short'}); };
+
+function todayISO() {
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════════════════════════
+const api = {
+  get: url => fetch(url).then(r => { if(!r.ok) throw new Error(r.status); return r.json(); }),
+  post: (url, body) => fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()),
+  put: (url, body) => fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()),
+  del: url => fetch(url,{method:'DELETE'}).then(r=>r.json())
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+async function init() {
+  buildNav();
+  startClock();
+  $('#evDate').value = selDate;
+  $('#settleDate').value = todayISO();
+
+  try {
+    [me, allUsers] = await Promise.all([api.get('/api/me'), api.get('/api/users')]);
+    renderUserChip();
+    populateUserSelects();
+    populateMemberList();
+    renderChannels();
+    initSocket();
+  } catch(e) {
+    console.error('Init error:', e);
+    location.href = '/login.html';
+    return;
+  }
+
+  await Promise.all([loadHome(), loadCalendar(), loadTasks(), loadOps(), loadVacation()]);
+  $('#settleDate').value = todayISO();
+  loadSettle();
+}
+
+function buildNav() {
+  $('#navMenu').innerHTML = NAV.map(n=>`
+    <button class="nav-btn ${n.id==='home'?'active':''}" data-sec="${n.id}" title="${n.label}">
+      <span class="icon">${n.icon}</span><span>${n.label}</span>
+    </button>`).join('');
+  $$('.nav-btn').forEach(b => b.onclick = () => nav(b.dataset.sec));
+}
+
+function nav(id) {
+  currentSection = id;
+  $$('.section').forEach(s => s.classList.remove('active'));
+  $(`#${id}Section`)?.classList.add('active');
+  $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.sec === id));
+
+  if (id === 'chat') { initChat(); }
+  if (id === 'postit') { loadPostits(); }
+  if (id === 'team') { loadTeam(); }
+  if (id === 'settle') { loadSettle(); }
+  if (id === 'home') { loadHome(); }
+  if (id === 'calendar') { loadCalendar(); }
+  if (id === 'todo') { loadTasks(); }
+}
+
+function startClock() {
+  function tick() {
+    const d = new Date();
+    $('#clock').textContent = d.toLocaleString('ko-KR',{month:'short',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'});
+  }
+  tick(); setInterval(tick, 10000);
+}
+
+function renderUserChip() {
+  if (!me) return;
+  const avEl = $('#userAv');
+  if (me.avatar) {
+    avEl.innerHTML = `<img src="${me.avatar}" alt="${me.name}"/>`;
+  } else {
+    avEl.textContent = me.name[0];
+  }
+  avEl.className = me.avatar ? '' : 'av-fallback';
+  $('#userName').textContent = me.name;
+  const rb = $('#roleBadge');
+  rb.textContent = me.role === 'admin' ? '관리자' : me.role === 'team_lead' ? '팀장' : '팀원';
+  rb.className = `role-badge ${me.role}`;
+}
+
+function populateUserSelects() {
+  const opts = '<option value="">배정 없음</option>' + allUsers.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+  ['#evAssign','#taskAssign'].forEach(sel => { if ($(sel)) $(sel).innerHTML = opts; });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// HEADER METRICS
+// ═══════════════════════════════════════════════════════════════════
+async function updateHeaderMetrics() {
+  try {
+    const [tasks, events, vacation, cards] = await Promise.all([
+      api.get('/api/tasks'),
+      api.get('/api/events'),
+      api.get('/api/vacation'),
+      api.get('/api/card-records')
+    ]);
+    const now = new Date(), dow = now.getDay();
+    const ws = new Date(now); ws.setDate(now.getDate()-dow);
+    const we = new Date(ws); we.setDate(ws.getDate()+6);
+    const weekEvts = events.filter(e => { const d=new Date(e.date); return d>=ws&&d<=we; });
+    const open = tasks.filter(t=>!t.done);
+    const total = cards.reduce((a,b)=>a+Number(b.amount),0);
+    const remain = Math.max(0,(Number(vacation.total||15))-(Number(vacation.used||0)));
+
+    $('#h-week').textContent = weekEvts.length+'건';
+    $('#h-todo').textContent = open.length+'개';
+    $('#h-vac').textContent = remain+'일';
+    $('#h-card').textContent = fmt(total);
+    $('#h-team').textContent = allUsers.length+'명';
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════════════════════════════
+async function loadHome() {
+  await updateHeaderMetrics();
+  try {
+    const [events, tasks, trips, assets, cards] = await Promise.all([
+      api.get('/api/events'),
+      api.get('/api/tasks'),
+      api.get('/api/trips'),
+      api.get('/api/assets'),
+      api.get('/api/card-records')
+    ]);
+
+    const today = todayISO(), now = new Date(), dow = now.getDay();
+    const ws = new Date(now); ws.setDate(now.getDate()-dow);
+    const we = new Date(ws); we.setDate(ws.getDate()+6);
+    const weekEvts = events.filter(e=>{ const d=new Date(e.date); return d>=ws&&d<=we; });
+    const open = tasks.filter(t=>!t.done);
+    const done = tasks.filter(t=>t.done);
+    const rate = tasks.length ? Math.round(done.length/tasks.length*100) : 0;
+    const pending = trips.filter(t=>t.status==='승인 대기');
+    const lowStock = assets.filter(a=>Number(a.qty)<=Number(a.min_qty)||a.status!=='정상');
+
+    $('#s-weekEvt').textContent = weekEvts.length+'건';
+    $('#s-openTask').textContent = open.length+'개';
+    $('#s-taskMtr').style.width = Math.min(100,open.length*10)+'%';
+    $('#s-rate').textContent = rate+'%';
+    $('#s-rateMtr').style.width = rate+'%';
+    $('#s-trip').textContent = pending.length+'건';
+    $('#s-stock').textContent = lowStock.length+'개';
+
+    // Upcoming events
+    const upcoming = events.filter(e=>e.date>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,8);
+    $('#upcomingList').innerHTML = upcoming.length ? upcoming.map(e=>`
+      <div class="list-item">
+        <span class="badge ${e.priority}">${e.priority==='high'?'긴급':e.priority==='mid'?'보통':'낮음'}</span>
+        <div style="flex:1"><div class="item-title">${e.title}</div><div class="item-meta">${fmtDate(e.date)}${e.assigned_name?' · '+e.assigned_name:''}</div></div>
+      </div>`).join('') : '<div class="empty">다가오는 일정이 없습니다</div>';
+
+    // Priority tasks
+    const prio = open.sort((a,b)=>({'high':0,'mid':1,'low':2}[a.priority]-{'high':0,'mid':1,'low':2}[b.priority])).slice(0,6);
+    $('#priorityTaskList').innerHTML = prio.length ? prio.map(t=>`
+      <div class="list-item">
+        <input type="checkbox" class="hm-check" data-id="${t.id}"/>
+        <div style="flex:1"><div class="item-title">${t.title}</div><div class="item-meta">${t.due||'기한 없음'} · ${t.owner_name||t.assigned_name||'-'}</div></div>
+        <span class="badge ${t.priority}">${t.priority==='high'?'긴급':t.priority==='mid'?'보통':'낮음'}</span>
+      </div>`).join('') : '<div class="empty">진행 중인 작업이 없습니다</div>';
+    $$('.hm-check').forEach(c=>c.onchange=()=>{ api.put('/api/tasks/'+c.dataset.id,{done:c.checked}).then(loadHome); });
+
+    // Workload bars
+    const docPct=45, meetPct=30, extPct=25;
+    $('#homeWorkloadBars').innerHTML = [['문서',docPct,'#64c8c5'],['회의',meetPct,'#ffb44e'],['외부',extPct,'#5b8def']].map(([l,p,c])=>`
+      <div class="bar-col">
+        <div class="bar-pct">${p}%</div>
+        <div class="bar-bg"><div class="bar-fill" style="height:${p}%;background:${c}"></div></div>
+        <div class="bar-lbl">${l}</div>
+      </div>`).join('');
+
+    // Card insight
+    if (cards.length) {
+      const total = cards.reduce((a,b)=>a+Number(b.amount),0);
+      const catMap = {}; cards.forEach(r=>{ catMap[r.category]=(catMap[r.category]||0)+Number(r.amount); });
+      const top = Object.entries(catMap).sort((a,b)=>b[1]-a[1])[0];
+      $('#homeCardInsight').textContent = `총 ${fmt(total)} · 최다 카테고리: ${top?top[0]:'-'}`;
+    }
+  } catch(e) { console.error('loadHome error:', e); }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════════════════════════════════
+async function loadCalendar() {
+  const y = calCursor.getFullYear(), m = calCursor.getMonth();
+  $('#calTitle').textContent = `${y}년 ${m+1}월`;
+
+  let events = [];
+  try { events = await api.get(`/api/events?year=${y}&month=${m+1}`); } catch(e) {}
+
+  const first = new Date(y,m,1), startDay = first.getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const prevMonthDays = new Date(y,m,0).getDate();
+  const cells = [];
+  for(let i=0;i<startDay;i++) cells.push({date:new Date(y,m-1,prevMonthDays-startDay+i+1),out:true});
+  for(let d=1;d<=daysInMonth;d++) cells.push({date:new Date(y,m,d),out:false});
+  while(cells.length<42) cells.push({date:new Date(y,m+1,cells.length-startDay-daysInMonth+1),out:true});
+
+  const today = todayISO();
+  $('#calDays').innerHTML = cells.map(c=>{
+    const iso = `${c.date.getFullYear()}-${String(c.date.getMonth()+1).padStart(2,'0')}-${String(c.date.getDate()).padStart(2,'0')}`;
+    const dayEvts = events.filter(e=>e.date===iso);
+    const cls = ['cal-day',c.out?'out':'',iso===selDate?'selected':'',iso===today?'today':''].filter(Boolean).join(' ');
+    return `<div class="${cls}" data-date="${iso}">
+      <div class="dn">${c.date.getDate()}</div>
+      ${dayEvts.slice(0,2).map(ev=>`<div class="ev-pill ${ev.priority}" title="${ev.title}">${ev.title}</div>`).join('')}
+      ${dayEvts.length>2?`<div style="font-size:9px;color:var(--muted)">+${dayEvts.length-2}</div>`:''}
+    </div>`;
+  }).join('');
+
+  $$('#calDays .cal-day').forEach(d => d.onclick = () => {
+    selDate = d.dataset.date;
+    $('#evDate').value = selDate;
+    loadCalendar();
+    renderDayEvents(events, selDate);
+  });
+
+  renderDayEvents(events, selDate);
+  $('#selDateLbl').textContent = `${fmtDate(selDate)} 일정`;
+}
+
+function renderDayEvents(events, date) {
+  const list = events.filter(e=>e.date===date);
+  $('#evListForDay').innerHTML = list.length ? list.map(ev=>`
+    <div class="list-item">
+      <span class="badge ${ev.priority}">${ev.priority==='high'?'긴급':ev.priority==='mid'?'보통':'낮음'}</span>
+      <div style="flex:1"><div class="item-title">${ev.title}</div><div class="item-meta">${ev.note||'메모 없음'}${ev.assigned_name?' · '+ev.assigned_name:''}</div></div>
+      <button class="btn-sm danger del-ev" data-id="${ev.id}">삭제</button>
+    </div>`).join('') : '<div class="empty">이 날짜에 등록된 일정이 없습니다</div>';
+  $$('.del-ev').forEach(b=>b.onclick=()=>{ api.del('/api/events/'+b.dataset.id).then(()=>loadCalendar()); });
+}
+
+$('#prevMonth').onclick = () => { calCursor.setMonth(calCursor.getMonth()-1); loadCalendar(); };
+$('#nextMonth').onclick = () => { calCursor.setMonth(calCursor.getMonth()+1); loadCalendar(); };
+$('#goTodayBtn').onclick = () => { calCursor=new Date(); selDate=todayISO(); loadCalendar(); };
+$('#saveEvBtn').onclick = async () => {
+  const title = $('#evTitle').value.trim();
+  if (!title) return alert('제목을 입력하세요.');
+  await api.post('/api/events',{
+    title, date:$('#evDate').value||selDate||todayISO(),
+    note:$('#evNote').value.trim(), priority:$('#evPri').value,
+    assignedTo:$('#evAssign').value||null
+  });
+  $('#evTitle').value=''; $('#evNote').value='';
+  loadCalendar(); updateHeaderMetrics();
+};
+$('#resetEvBtn').onclick=()=>{ $('#evTitle').value=''; $('#evNote').value=''; $('#evPri').value='mid'; };
+
+// ═══════════════════════════════════════════════════════════════════
+// TASKS
+// ═══════════════════════════════════════════════════════════════════
+async function loadTasks() {
+  let tasks = [];
+  try { tasks = await api.get('/api/tasks'); } catch(e) {}
+  renderTasks(tasks);
+}
+
+function renderTasks(tasks) {
+  let filtered = [...tasks];
+  if (taskFilter==='open') filtered = filtered.filter(t=>!t.done);
+  if (taskFilter==='done') filtered = filtered.filter(t=>t.done);
+  if (taskFilter==='high') filtered = filtered.filter(t=>!t.done&&t.priority==='high');
+  filtered.sort((a,b)=>(a.done-b.done)||({'high':0,'mid':1,'low':2}[a.priority]-{'high':0,'mid':1,'low':2}[b.priority]));
+
+  $('#taskList').innerHTML = filtered.length ? filtered.map(t=>`
+    <div class="list-item ${t.done?'done':''}">
+      <input type="checkbox" class="tc" data-id="${t.id}" ${t.done?'checked':''}/>
+      <div style="flex:1">
+        <div class="item-title">${t.title}</div>
+        <div class="item-meta">${t.owner_name||t.assigned_name||'담당 미지정'} · ${t.due||'기한 없음'}</div>
+      </div>
+      <span class="badge ${t.priority}">${t.priority==='high'?'긴급':t.priority==='mid'?'보통':'낮음'}</span>
+      <button class="btn-sm danger del-task" data-id="${t.id}">삭제</button>
+    </div>`).join('') : '<div class="empty">조건에 맞는 할 일이 없습니다</div>';
+
+  $$('.tc').forEach(c=>c.onchange=()=>{ api.put('/api/tasks/'+c.dataset.id,{done:c.checked}).then(loadTasks); });
+  $$('.del-task').forEach(b=>b.onclick=()=>{ api.del('/api/tasks/'+b.dataset.id).then(loadTasks); });
+
+  const today = todayISO();
+  const imminent = tasks.filter(t=>!t.done&&t.due&&t.due<=today).slice(0,5);
+  $('#deadlineList').innerHTML = imminent.length ? imminent.map(t=>`
+    <div class="list-item">
+      <span>⏰</span>
+      <div style="flex:1"><div class="item-title">${t.title}</div><div class="item-meta">${t.due}</div></div>
+      <span class="badge ${t.priority}">${t.priority==='high'?'긴급':t.priority==='mid'?'보통':'낮음'}</span>
+    </div>`).join('') : '<div class="empty">오늘 기준 급한 작업 없음</div>';
+}
+
+$$('.taskFilter').forEach(c=>c.onclick=function(){
+  $$('.taskFilter').forEach(x=>x.classList.remove('active'));
+  this.classList.add('active'); taskFilter=this.dataset.f; loadTasks();
+});
+
+$('#addTaskBtn').onclick = async () => {
+  const title=$('#taskTitle').value.trim();
+  if (!title) return alert('제목을 입력하세요.');
+  await api.post('/api/tasks',{
+    title, due:$('#taskDue').value||null, priority:$('#taskPri').value,
+    ownerName:$('#taskOwner').value.trim(),
+    assignedTo:$('#taskAssign').value||null
+  });
+  $('#taskTitle').value=''; $('#taskDue').value=''; $('#taskOwner').value='';
+  loadTasks(); updateHeaderMetrics();
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// SOCKET.IO CHAT
+// ═══════════════════════════════════════════════════════════════════
+let socket;
+function initSocket() {
+  socket = io();
+  socket.on('connect', () => {
+    socket.emit('join-channel', currentChannel);
+  });
+  socket.on('message', (msg) => {
+    appendMessage(msg);
+    scrollChat();
+  });
+  socket.on('typing', ({ userName }) => {
+    $('#typingInd').textContent = `${userName}님이 입력 중...`;
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(()=>$('#typingInd').textContent='', 2000);
+  });
+}
+
+function initChat() {
+  loadMessages(currentChannel);
+}
+
+function renderChannels() {
+  $('#channelList').innerHTML = CHANNELS.map(ch=>`
+    <div class="ch-item ${ch===currentChannel?'active':''}" data-ch="${ch}">
+      <span>#</span><span>${ch}</span>
+    </div>`).join('');
+  $$('#channelList .ch-item').forEach(el=>el.onclick=()=>{
+    currentChannel=el.dataset.ch;
+    $$('#channelList .ch-item').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    $('#chatHdr').textContent = '# '+currentChannel;
+    if(socket) socket.emit('join-channel', currentChannel);
+    loadMessages(currentChannel);
+  });
+
+  const dmUsers = allUsers.filter(u => u.id !== me?.id).slice(0,8);
+  $('#dmList').innerHTML = dmUsers.map(u=>`
+    <div class="ch-item" data-ch="dm-${u.id}">
+      <span>💬</span><span>${u.name}</span>
+    </div>`).join('');
+  $$('#dmList .ch-item').forEach(el=>el.onclick=()=>{
+    currentChannel=el.dataset.ch;
+    $$('#channelList .ch-item,#dmList .ch-item').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    $('#chatHdr').textContent = '💬 '+el.querySelector('span:last-child').textContent;
+    if(socket) socket.emit('join-channel', currentChannel);
+    loadMessages(currentChannel);
+  });
+}
+
+function populateMemberList() {
+  $('#memberList').innerHTML = allUsers.map(u=>`
+    <div class="member-item">
+      <div class="dot"></div>
+      <div>
+        ${u.avatar ? `<img src="${u.avatar}" class="user-av" style="width:20px;height:20px"/>` : ''}
+        <span style="font-size:11px">${u.name}</span>
+      </div>
+    </div>`).join('');
+}
+
+async function loadMessages(ch) {
+  $('#chatMsgs').innerHTML = '';
+  try {
+    const msgs = await api.get('/api/messages/'+ch);
+    msgs.forEach(m => appendMessage({
+      id: m.id, userId: m.user_id, userName: m.user_name,
+      userAvatar: m.user_avatar, text: m.text, createdAt: m.created_at
+    }));
+    scrollChat();
+  } catch(e) {}
+}
+
+function appendMessage(msg) {
+  const isMine = msg.userId === me?.id;
+  const time = new Date(msg.createdAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+  const div = document.createElement('div');
+  div.className = 'msg-bubble' + (isMine?' mine':'');
+  div.innerHTML = `
+    <div class="msg-av">${msg.userAvatar?`<img src="${msg.userAvatar}" alt="${msg.userName}"/>`:(msg.userName||'?')[0]}</div>
+    <div class="msg-body">
+      ${!isMine?`<div class="msg-name">${msg.userName}</div>`:''}
+      <div class="msg-text">${escHtml(msg.text)}</div>
+      <div class="msg-time">${time}</div>
+    </div>`;
+  $('#chatMsgs').appendChild(div);
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function scrollChat() { const el=$('#chatMsgs'); if(el) el.scrollTop=el.scrollHeight; }
+
+$('#sendChatBtn').onclick = sendChat;
+$('#chatInput').onkeydown = e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} };
+$('#chatInput').oninput = () => { if(socket&&currentChannel) socket.emit('typing',{channel:currentChannel}); };
+
+function sendChat() {
+  const text = $('#chatInput').value.trim();
+  if (!text || !socket) return;
+  socket.emit('message', { channel: currentChannel, text });
+  $('#chatInput').value = '';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// POST-ITS
+// ═══════════════════════════════════════════════════════════════════
+$$('.color-swatch').forEach(sw => sw.onclick = function() {
+  $$('.color-swatch').forEach(x=>x.classList.remove('active'));
+  this.classList.add('active');
+  selectedPostitColor = this.dataset.color;
+});
+
+async function loadPostits() {
+  $('#postitBoard').innerHTML = '';
+  try {
+    const postits = await api.get('/api/postits');
+    postits.forEach(p => createPostitEl(p));
+  } catch(e) {}
+}
+
+$('#addPostitBtn').onclick = async () => {
+  const board = $('#postitBoard');
+  const rect = board.getBoundingClientRect();
+  const x = Math.floor(Math.random()*(rect.width-200)+20);
+  const y = Math.floor(Math.random()*(rect.height-200)+20);
+  try {
+    const p = await api.post('/api/postits',{ content:'', color:selectedPostitColor, posX:x, posY:y });
+    createPostitEl(p);
+  } catch(e) {}
+};
+
+function createPostitEl(p) {
+  const el = document.createElement('div');
+  el.className = 'postit';
+  el.id = 'postit-'+p.id;
+  el.style.cssText = `left:${p.pos_x}px;top:${p.pos_y}px;background:${p.color};`;
+  el.innerHTML = `
+    <div class="postit-hdr">
+      <span class="drag-handle">⠿</span>
+      <button onclick="deletePostit(${p.id})" style="background:none;border:none;cursor:pointer;font-size:13px;color:rgba(0,0,0,.35);padding:0">✕</button>
+    </div>
+    <textarea placeholder="메모를 입력하세요...">${p.content||''}</textarea>`;
+  const ta = el.querySelector('textarea');
+  let saveTimer;
+  ta.oninput = () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => api.put('/api/postits/'+p.id,{ content: ta.value }), 800);
+  };
+  makeDraggable(el, p.id);
+  $('#postitBoard').appendChild(el);
+}
+
+function makeDraggable(el, id) {
+  const hdr = el.querySelector('.postit-hdr');
+  let sx, sy, sl, st;
+  hdr.onmousedown = e => {
+    if (e.target.tagName==='BUTTON') return;
+    sx=e.clientX; sy=e.clientY;
+    sl=parseInt(el.style.left)||0; st=parseInt(el.style.top)||0;
+    let saveTimer;
+    const onMove = e => {
+      el.style.left=(sl+e.clientX-sx)+'px';
+      el.style.top=(st+e.clientY-sy)+'px';
+    };
+    const onUp = () => {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => api.put('/api/postits/'+id,{ posX:parseInt(el.style.left), posY:parseInt(el.style.top) }), 300);
+      document.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',onUp);
+    };
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
+  };
+}
+
+async function deletePostit(id) {
+  await api.del('/api/postits/'+id);
+  $('#postit-'+id)?.remove();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// OPS
+// ═══════════════════════════════════════════════════════════════════
+async function loadOps() {
+  try {
+    const [assets, trips, opsMemo] = await Promise.all([
+      api.get('/api/assets'), api.get('/api/trips'), api.get('/api/ops-memo')
+    ]);
+    renderAssets(assets);
+    renderTrips(trips);
+    $('#opsMemo').value = opsMemo.content || '';
+  } catch(e) {}
+}
+
+function renderAssets(assets) {
+  $('#assetList').innerHTML = assets.length ? assets.map(a=>`
+    <div class="list-item">
+      <div style="flex:1">
+        <div class="item-title">${a.name}</div>
+        <div class="item-meta">수량 ${a.qty} / 최소 ${a.min_qty} · ${a.owner_name||'-'}</div>
+      </div>
+      <span class="badge ${Number(a.qty)<=Number(a.min_qty)||a.status!=='정상'?'high':'ok'}">${a.status}</span>
+      <button class="btn-sm danger del-asset" data-id="${a.id}">삭제</button>
+    </div>`).join('') : '<div class="empty">등록된 비품이 없습니다</div>';
+  $$('.del-asset').forEach(b=>b.onclick=()=>{ api.del('/api/assets/'+b.dataset.id).then(loadOps); });
+}
+
+function renderTrips(trips) {
+  $('#tripList').innerHTML = trips.length ? trips.map(t=>`
+    <div class="list-item">
+      <div style="flex:1">
+        <div class="item-title">${t.purpose}</div>
+        <div class="item-meta">${t.destination} · ${t.start_date||''} ~ ${t.end_date||''} · ${t.user_name||''}</div>
+        ${t.memo?`<div class="item-meta">${t.memo}</div>`:''}
+      </div>
+      <select class="inp trip-status" data-id="${t.id}" style="max-width:100px;font-size:11px;padding:4px 6px">
+        <option ${t.status==='승인 대기'?'selected':''}>승인 대기</option>
+        <option ${t.status==='승인 완료'?'selected':''}>승인 완료</option>
+        <option ${t.status==='반려'?'selected':''}>반려</option>
+      </select>
+      <button class="btn-sm danger del-trip" data-id="${t.id}">삭제</button>
+    </div>`).join('') : '<div class="empty">출장 신청 내역이 없습니다</div>';
+  $$('.del-trip').forEach(b=>b.onclick=()=>{ api.del('/api/trips/'+b.dataset.id).then(loadOps); });
+  $$('.trip-status').forEach(sel=>sel.onchange=()=>{ api.put('/api/trips/'+sel.dataset.id,{status:sel.value}); });
+}
+
+$('#addAssetBtn').onclick = async () => {
+  const name=$('#assetName').value.trim(); if(!name) return alert('비품명을 입력하세요.');
+  await api.post('/api/assets',{ name, qty:Number($('#assetQty').value||0), minQty:Number($('#assetMin').value||0), ownerName:$('#assetOwner').value.trim(), status:$('#assetStatus').value });
+  ['#assetName','#assetQty','#assetMin','#assetOwner'].forEach(s=>$(s).value='');
+  $('#assetStatus').value='정상'; loadOps(); updateHeaderMetrics();
+};
+
+$('#addTripBtn').onclick = async () => {
+  const purpose=$('#tripPurpose').value.trim(); if(!purpose) return alert('출장 목적을 입력하세요.');
+  await api.post('/api/trips',{ purpose, destination:$('#tripDest').value.trim(), startDate:$('#tripStart').value||null, endDate:$('#tripEnd').value||null, status:$('#tripStatus').value, memo:$('#tripMemo').value.trim() });
+  ['#tripPurpose','#tripDest','#tripStart','#tripEnd','#tripMemo'].forEach(s=>$(s).value='');
+  loadOps(); updateHeaderMetrics();
+};
+
+async function loadVacation() {
+  try {
+    const v = await api.get('/api/vacation');
+    $('#vacTotal').value = v.total || 15;
+    $('#vacUsed').value = v.used || 0;
+    const remain = Math.max(0, Number(v.total||15) - Number(v.used||0));
+    $('#vacRemain').textContent = remain+'일';
+    $('#vacMtr').style.width = (v.total ? Math.round(remain/v.total*100) : 0)+'%';
+    $('#h-vac').textContent = remain+'일';
+  } catch(e) {}
+}
+
+$('#saveVacBtn').onclick = async () => {
+  await api.put('/api/vacation',{ total:Number($('#vacTotal').value||15), used:Number($('#vacUsed').value||0) });
+  loadVacation();
+};
+
+$('#saveOpsMemoBtn').onclick = async () => {
+  await api.put('/api/ops-memo',{ content:$('#opsMemo').value.trim() });
+  alert('운영 메모가 저장되었습니다.');
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// CARD ANALYSIS
+// ═══════════════════════════════════════════════════════════════════
+$$('.sampleBtn').forEach(b => b.onclick=()=>analyzeCards(SAMPLE[b.dataset.s]));
+
+$('#analyzeCardBtn').onclick = async () => {
+  const file = $('#cardFile').files[0];
+  if (!file) return alert('파일을 선택하세요.');
+  const text = await file.text();
+  let data;
+  try { data = file.name.endsWith('.json') ? JSON.parse(text) : parseCSV(text); }
+  catch(e) { return alert('파일 형식 오류. CSV/JSON을 확인하세요.'); }
+  analyzeCards(data);
+};
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const hdrs = lines.shift().split(',').map(v=>v.trim());
+  return lines.map(line => { const cols=line.split(',').map(v=>v.trim()); const o={}; hdrs.forEach((h,i)=>o[h]=cols[i]); return o; });
+}
+
+async function analyzeCards(records) {
+  const valid = records.filter(r=>r.date&&r.merchant&&r.category&&r.amount!==undefined);
+  try { await api.post('/api/card-records',{ records: valid }); } catch(e) {}
+
+  const total = valid.reduce((a,b)=>a+Number(b.amount||0),0);
+  const avg = valid.length ? Math.round(total/valid.length) : 0;
+  $('#cardTotal').textContent = fmt(total);
+  $('#cardAvg').textContent = fmt(avg);
+
+  const catMap = {}, merchantMap = {};
+  let weekendSpend = 0;
+  valid.forEach(r => {
+    catMap[r.category] = (catMap[r.category]||0)+Number(r.amount||0);
+    merchantMap[r.merchant] = (merchantMap[r.merchant]||0)+1;
+    const day = new Date(r.date).getDay();
+    if(day===0||day===6) weekendSpend+=Number(r.amount||0);
+  });
+  const cats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+  const merchants = Object.entries(merchantMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+  const topCat = cats[0], topM = merchants[0];
+  $('#cardInsight').innerHTML = `총 <b>${valid.length}건</b> 분석 · 최다 지출: <b>${topCat?topCat[0]:'-'}</b> · 반복 가맹점: <b>${topM?topM[0]:'-'}</b> · 주말 결제: <b>${fmt(weekendSpend)}</b>`;
+
+  $('#catList').innerHTML = cats.map(([k,v])=>`
+    <div class="list-item" style="margin-bottom:4px">
+      <div class="item-title">${k}</div>
+      <div style="font-weight:800;font-size:12px">${fmt(v)}</div>
+    </div>`).join('');
+
+  $('#merchantList').innerHTML = merchants.map(([k,v])=>`
+    <div class="list-item" style="margin-bottom:4px">
+      <div class="item-title" style="font-size:11px">${k}</div>
+      <span class="badge info">${v}회</span>
+    </div>`).join('');
+
+  // Doughnut chart
+  if (cardDoughnutChart) cardDoughnutChart.destroy();
+  cardDoughnutChart = new Chart($('#cardDoughnut'), {
+    type:'doughnut',
+    data:{ labels:cats.map(c=>c[0]), datasets:[{ data:cats.map(c=>c[1]), backgroundColor:CHART_COLORS, borderWidth:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ font:{size:10}, padding:8 } } } }
+  });
+
+  // Bar chart (by merchant, top 6)
+  if (cardBarChart) cardBarChart.destroy();
+  const topMerchants = merchants.slice(0,6);
+  const mSpend = {}; valid.forEach(r=>{ mSpend[r.merchant]=(mSpend[r.merchant]||0)+Number(r.amount||0); });
+  cardBarChart = new Chart($('#cardBarChart'), {
+    type:'bar',
+    data:{
+      labels: topMerchants.map(([k])=>k),
+      datasets:[{ label:'지출액', data:topMerchants.map(([k])=>mSpend[k]||0), backgroundColor:'rgba(100,200,197,.7)', borderRadius:6 }]
+    },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{ ticks:{ font:{size:9}, callback:v=>(v/10000).toFixed(0)+'만' } }, x:{ ticks:{ font:{size:9} } } } }
+  });
+
+  updateHeaderMetrics();
+  $('#homeCardInsight').textContent = `총 ${fmt(total)} · 최다 카테고리: ${topCat?topCat[0]:'-'}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SETTLEMENT
+// ═══════════════════════════════════════════════════════════════════
+$$('.settlePeriod').forEach(c => c.onclick=function(){
+  $$('.settlePeriod').forEach(x=>x.classList.remove('active'));
+  this.classList.add('active');
+});
+
+$('#loadSettleBtn').onclick = loadSettle;
+$('#sendSummaryBtn').onclick = async () => {
+  try { await api.post('/api/email/daily-summary',{}); alert('결산 이메일을 발송했습니다!'); }
+  catch(e) { alert('이메일 발송 실패: '+e.message); }
+};
+
+async function loadSettle() {
+  const period = ($$('.settlePeriod.active')[0]||{}).dataset?.p || 'monthly';
+  const date = $('#settleDate').value || todayISO();
+  try {
+    const d = await api.get(`/api/analytics/settlement?period=${period}&date=${date}`);
+    $('#settleRange').textContent = `${d.start} ~ ${d.end}`;
+    $('#st-events').textContent = d.events.total+'건';
+    $('#st-rate').textContent = d.tasks.rate+'%';
+    $('#st-rateMtr').style.width = d.tasks.rate+'%';
+    $('#st-spend').textContent = fmt(d.spending.total);
+
+    // Trend chart
+    const dailyEntries = Object.entries(d.spending.daily||{}).sort((a,b)=>a[0].localeCompare(b[0]));
+    if (trendChart) trendChart.destroy();
+    trendChart = new Chart($('#trendChart'), {
+      type:'line',
+      data:{
+        labels: dailyEntries.map(([k])=>k.slice(5)),
+        datasets:[{ label:'지출액', data:dailyEntries.map(([,v])=>v), borderColor:'#64c8c5', backgroundColor:'rgba(100,200,197,.15)', tension:.4, fill:true, pointRadius:3 }]
+      },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ ticks:{ font:{size:9}, callback:v=>(v/10000).toFixed(1)+'만' } }, x:{ ticks:{ font:{size:9} } } } }
+    });
+
+    // Category donut
+    const cats = Object.entries(d.spending.byCategory||{}).sort((a,b)=>b[1]-a[1]);
+    if (settleDonut) settleDonut.destroy();
+    settleDonut = new Chart($('#settleDonut'), {
+      type:'doughnut',
+      data:{ labels:cats.map(([k])=>k), datasets:[{ data:cats.map(([,v])=>v), backgroundColor:CHART_COLORS, borderWidth:0 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ font:{size:10}, padding:6 } } } }
+    });
+  } catch(e) { console.error('loadSettle error:', e); }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TEAM
+// ═══════════════════════════════════════════════════════════════════
+async function loadTeam() {
+  try {
+    const [users, tasks, events] = await Promise.all([
+      api.get('/api/users'), api.get('/api/tasks'), api.get('/api/events')
+    ]);
+
+    $('#teamUserList').innerHTML = users.map(u=>`
+      <div class="user-row">
+        <div class="user-av">${u.avatar?`<img src="${u.avatar}" alt="${u.name}"/>`:(u.name[0]||'?')}</div>
+        <div>
+          <div style="font-weight:700;font-size:12px">${u.name}</div>
+          <div style="font-size:10px;color:var(--muted)">${u.email}</div>
+        </div>
+        <select class="inp role-sel" data-id="${u.id}" style="font-size:11px;padding:4px 6px;max-width:90px" ${me?.role!=='admin'?'disabled':''}>
+          <option value="member" ${u.role==='member'?'selected':''}>팀원</option>
+          <option value="team_lead" ${u.role==='team_lead'?'selected':''}>팀장</option>
+          <option value="admin" ${u.role==='admin'?'selected':''}>관리자</option>
+        </select>
+        <span class="badge ${u.role==='admin'?'info':u.role==='team_lead'?'warn':'ok'}">${u.role==='admin'?'관리자':u.role==='team_lead'?'팀장':'팀원'}</span>
+      </div>`).join('');
+
+    $$('.role-sel').forEach(sel=>sel.onchange=async()=>{
+      await api.put('/api/users/'+sel.dataset.id+'/role',{role:sel.value});
+      loadTeam();
+    });
+
+    // Task overview per user
+    $('#teamTaskOverview').innerHTML = users.map(u=>{
+      const ut = tasks.filter(t=>t.assigned_to===u.id);
+      const done = ut.filter(t=>t.done).length;
+      return `<div class="list-item">
+        <div style="flex:1"><div class="item-title">${u.name}</div><div class="item-meta">${done}/${ut.length}개 완료</div></div>
+        <div style="width:80px;background:#eef6f6;border-radius:6px;overflow:hidden;height:8px">
+          <div style="height:100%;background:var(--mint);width:${ut.length?Math.round(done/ut.length*100):0}%"></div>
+        </div>
+        <span style="font-size:11px;font-weight:700;width:30px;text-align:right">${ut.length?Math.round(done/ut.length*100):0}%</span>
+      </div>`;
+    }).join('');
+
+    // Event overview per user
+    const today = todayISO();
+    $('#teamEventOverview').innerHTML = users.map(u=>{
+      const ue = events.filter(e=>e.assigned_to===u.id&&e.date>=today).slice(0,3);
+      return ue.length ? ue.map(e=>`<div class="list-item">
+        <span class="badge ${e.priority}">${e.priority==='high'?'긴급':'보통'}</span>
+        <div style="flex:1"><div class="item-title" style="font-size:11px">${e.title}</div><div class="item-meta">${fmtDate(e.date)} · ${u.name}</div></div>
+      </div>`).join('') : '';
+    }).join('') || '<div class="empty">배정된 일정이 없습니다</div>';
+  } catch(e) { console.error('loadTeam error:', e); }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AI ASSISTANTS
+// ═══════════════════════════════════════════════════════════════════
+function renderAiMsg(container, role, text) {
+  const div = document.createElement('div');
+  div.className = `ai-msg ${role}`;
+  div.innerHTML = `<div class="ai-role">${role==='user'?'나':'어시스턴트'}</div>${escHtml(text)}`;
+  $(container).appendChild(div);
+  $(container).scrollTop = $(container).scrollHeight;
+}
+
+async function getWorkReply(prompt) {
+  let tasks=[], events=[], memo='';
+  try {
+    [tasks, events, {content:memo}] = await Promise.all([api.get('/api/tasks'), api.get('/api/events'), api.get('/api/ops-memo')]);
+  } catch(e) {}
+  const today=todayISO();
+  const todayEvts = events.filter(e=>e.date===today).map(e=>`- ${e.title}`).join('\n')||'- 오늘 일정 없음';
+  const openTasks = tasks.filter(t=>!t.done).slice(0,3).map(t=>`- ${t.title} (${t.due||'기한 없음'})`).join('\n')||'- 진행 중 작업 없음';
+
+  if(prompt.includes('회의')||prompt.includes('요약'))
+    return `[회의 요약 템플릿]\n\n1. 논의 목적\n2. 주요 결정사항\n3. 담당자별 액션 아이템\n4. 다음 일정\n\n📅 오늘 일정:\n${todayEvts}`;
+  if(prompt.includes('메일'))
+    return `[외부 응대 메일 초안]\n\n안녕하세요. 요청 주신 내용을 확인하고 회신드립니다.\n현재 진행 상황과 필요 자료를 정리하여 전달드리겠습니다.\n\n📅 오늘 일정 참고:\n${todayEvts}`;
+  if(prompt.includes('우선순위')||prompt.includes('추천'))
+    return `[오늘 우선순위 추천]\n\n${openTasks}\n\n📌 운영 메모: ${memo||'없음'}\n\n판단 기준: 마감일, 우선순위 레벨, 미완료 상태를 종합했습니다.`;
+  if(prompt.includes('브리프')||prompt.includes('외주'))
+    return `[문서 외주 브리프 체크리스트]\n\n① 목적 및 범위 명시\n② 결과물 형식 (파일 형식, 분량)\n③ 마감 일정\n④ 예산 및 결제 조건\n⑤ 수정 횟수 및 검수 프로세스\n⑥ 저작권/기밀유지 조항`;
+  return `[업무 실행 초안]\n\n📅 오늘 일정:\n${todayEvts}\n\n✅ 진행 중 작업:\n${openTasks}\n\n📌 운영 메모: ${memo||'없음'}`;
+}
+
+function getLawReply(prompt) {
+  if(prompt.includes('NDA'))
+    return `[NDA 검토 체크리스트]\n\n① 비밀정보 정의 범위가 과도하지 않은지\n② 예외 조항 (공개정보, 독자 개발 등) 존재 여부\n③ 보존/파기 의무 기간 명확성\n④ 손해배상 조항의 과도함 여부\n⑤ 분쟁 해결 및 관할 법원\n\n※ 실제 계약 체결 전 법률 전문가 검토 필수`;
+  if(prompt.includes('개인정보'))
+    return `[개인정보 위탁 점검]\n\n① 위탁 목적과 범위 특정\n② 재위탁 제한 여부\n③ 안전성 확보조치 문구\n④ 파기/반환 절차\n⑤ 침해사고 통지 체계\n⑥ 개인정보보호법 준수 여부`;
+  if(prompt.includes('업무위탁'))
+    return `[업무위탁 리스크 체크]\n\n① 결과물 지식재산권 귀속\n② 하자보수 및 수정 범위\n③ 일정 지연 시 책임\n④ 대금 지급 조건 및 시기\n⑤ 비밀유지/자료 반납 의무\n⑥ 계약 해지 조건`;
+  if(prompt.includes('계약서'))
+    return `[계약서 검토 체크리스트]\n\n① 당사자 특정 및 권한 확인\n② 계약 목적 및 범위\n③ 대금 조건 및 지급 방식\n④ 이행 기간 및 마감\n⑤ 책임·보증 조항\n⑥ 해지 및 해제 조건\n⑦ 분쟁 해결 (중재/소송)\n⑧ 관할 법원`;
+  return `[법률 검토 초안]\n\n계약 목적과 범위를 먼저 특정하세요.\n책임, 손해배상, 해지, 관할 조항을 별도로 확인하세요.\n개인정보/비밀정보가 포함되면 위탁 및 NDA 조항을 함께 검토하세요.\n\n※ 이 답변은 참고용입니다. 실제 자문은 변호사 검토가 필요합니다.`;
+}
+
+$$('.workPrompt').forEach(b=>b.onclick=()=>{ $('#workInput').value=b.textContent; });
+$$('.lawPrompt').forEach(b=>b.onclick=()=>{ $('#lawInput').value=b.textContent; });
+
+$('#sendWorkBtn').onclick = async () => {
+  const text=$('#workInput').value.trim(); if(!text) return;
+  renderAiMsg('#workChat','user',text);
+  $('#workInput').value='';
+  const reply = await getWorkReply(text);
+  renderAiMsg('#workChat','assistant',reply);
+};
+$('#workInput').onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#sendWorkBtn').click();} };
+
+$('#sendLawBtn').onclick = () => {
+  const text=$('#lawInput').value.trim(); if(!text) return;
+  renderAiMsg('#lawChat','user',text);
+  $('#lawInput').value='';
+  const reply = getLawReply(text);
+  renderAiMsg('#lawChat','assistant',reply);
+};
+$('#lawInput').onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#sendLawBtn').click();} };
+
+// ═══════════════════════════════════════════════════════════════════
+// HEADER BUTTONS
+// ═══════════════════════════════════════════════════════════════════
+$('#emailTestBtn').onclick = async () => {
+  try {
+    const r = await api.post('/api/email/daily-summary',{});
+    if(r.ok) alert('일일 결산 이메일을 발송했습니다!');
+    else alert('오류: '+(r.error||'알 수 없는 오류'));
+  } catch(e) { alert('이메일 설정을 확인하세요 (EMAIL_USER / EMAIL_PASS 환경변수)'); }
+};
+
+$('#saveBtn').onclick = () => alert('데이터는 PostgreSQL에 자동 저장됩니다.');
+
+// Initialize AI chat with greeting
+function initAiGreeting() {
+  renderAiMsg('#workChat','assistant','안녕하세요. 일정, To-do, 운영 메모를 바탕으로 오늘 해야 할 일을 정리해드릴 수 있습니다.');
+  renderAiMsg('#lawChat','assistant','안녕하세요. 계약/NDA/업무위탁/개인정보 위탁 관련 체크리스트 형식으로 도와드릴 수 있습니다.');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════════════════
+init().then(initAiGreeting);
+</script>
+</body>
+</html>

@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>업무 종합 html 대시보드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --mint:#64c8c5;
+      --mint-deep:#39b6b3;
+      --mint-soft:#e7f7f6;
+      --bg:#c3e3e2;
+      --panel:#f5fbfb;
+      --card:#ffffff;
+      --line:#d7eceb;
+      --text:#274241;
+      --muted:#6f8887;
+      --shadow:0 18px 45px rgba(51, 99, 99, .12);
+      --danger:#ff7e66;
+      --warning:#ffb44e;
+      --success:#3bb273;
+      --blue:#5b8def;
+      --radius:18px;
+      --radius-sm:12px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:'Pretendard',system-ui,sans-serif;
+      color:var(--text);
+      background:
+        linear-gradient(140deg, rgba(255,255,255,.12), rgba(255,255,255,.06)),
+        linear-gradient(120deg, #b2dedd 0%, #c9eceb 30%, #abd7d6 100%);
+      padding:28px;
+    }
+    .shell{
+      max-width:1480px;
+      min-height:92vh;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns: 92px 1.45fr 1fr;
+      gap:24px;
+      background:rgba(255,255,255,.16);
+      border:1px solid rgba(255,255,255,.38);
+      border-radius:32px;
+      padding:22px;
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+    .sidebar{
+      background:linear-gradient(180deg, #54c6c3 0%, #45b7b4 100%);
+      border-radius:24px;
+      padding:18px 12px;
+      color:#fff;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:16px;
+      position:sticky;
+      top:20px;
+      height:calc(92vh - 44px);
+    }
+    .logo{
+      width:52px;height:52px;border-radius:50%;
+      background:rgba(24,64,68,.42);
+      display:grid;place-items:center;font-size:24px;
+      margin-bottom:6px;
+    }
+    .menu{
+      display:flex;flex-direction:column;gap:8px;width:100%;
+    }
+    .nav-btn{
+      width:100%;
+      border:none;
+      background:transparent;
+      color:#eaffff;
+      border-radius:14px;
+      padding:12px 8px;
+      cursor:pointer;
+      display:flex;flex-direction:column;gap:6px;align-items:center;
+      font-size:11px;font-weight:600;
+      transition:.2s ease;
+      opacity:.82;
+    }
+    .nav-btn:hover,.nav-btn.active{background:rgba(255,255,255,.18);opacity:1}
+    .nav-btn .icon{font-size:18px}
+    .sidebar .bottom{
+      margin-top:auto;
+      width:100%;
+      display:flex;flex-direction:column;gap:8px;
+    }
+    .main,.right{
+      display:flex;flex-direction:column;gap:20px;
+    }
+    .hero{
+      background:rgba(255,255,255,.76);
+      border-radius:26px;
+      padding:22px 24px 18px;
+      border:1px solid rgba(255,255,255,.7);
+      box-shadow:var(--shadow);
+    }
+    .hero-top{
+      display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+    .title-wrap h1{
+      margin:0;font-size:29px;font-weight:800;letter-spacing:-.03em;color:#ffffff;
+      text-shadow:0 1px 0 rgba(0,0,0,.06);
+    }
+    .frame-title{
+      grid-column:1 / -1;
+      padding:10px 8px 4px;
+    }
+    .frame-title h2{
+      margin:0;
+      color:white;
+      font-size:34px;
+      font-weight:800;
+      letter-spacing:-.04em;
+    }
+    .tagline{color:#efffff;font-size:14px;margin-top:6px}
+    .hero-grid{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
+    }
+    .stat{
+      background:var(--card);
+      border-radius:18px;
+      padding:16px;
+      border:1px solid var(--line);
+      min-height:118px;
+    }
+    .stat .label{color:var(--muted);font-size:13px;font-weight:600}
+    .stat .value{margin-top:14px;font-size:28px;font-weight:800;letter-spacing:-.03em}
+    .delta{
+      display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;font-weight:700;
+      color:var(--success);background:#eefbf4;padding:6px 10px;border-radius:999px;
+    }
+    .delta.down{color:var(--danger);background:#fff2ef}
+    .content-grid{
+      display:grid;grid-template-columns:1.2fr 1fr;gap:20px;
+    }
+    .card{
+      background:rgba(255,255,255,.9);
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.82);
+      box-shadow:var(--shadow);
+      padding:18px;
+    }
+    .card h3{
+      margin:0 0 14px;
+      font-size:18px;
+      letter-spacing:-.02em;
+    }
+    .muted{color:var(--muted)}
+    .toolbar, .toolbar-wrap{
+      display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    }
+    .toolbar{
+      justify-content:space-between;margin-bottom:12px;
+    }
+    .chip, .btn, select, input, textarea{
+      font:inherit;
+    }
+    .chip{
+      background:var(--mint-soft);
+      color:#247270;
+      border:none;
+      padding:8px 12px;
+      border-radius:999px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .chip.active{background:var(--mint);color:white}
+    .btn{
+      background:linear-gradient(180deg, var(--mint) 0%, var(--mint-deep) 100%);
+      color:white;border:none;padding:11px 14px;border-radius:12px;
+      font-weight:700;cursor:pointer;
+      box-shadow:0 10px 18px rgba(64,190,186,.22);
+    }
+    .btn.secondary{background:white;color:var(--text);border:1px solid var(--line);box-shadow:none}
+    .btn.warn{background:linear-gradient(180deg, #ffb35c 0%, #ff9a42 100%)}
+    .btn.flat{background:#eff7f7;color:#256463;box-shadow:none}
+    .inp, select, textarea{
+      width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);
+      background:white;color:var(--text);outline:none;
+    }
+    textarea{min-height:98px;resize:vertical}
+    .panel-grid{
+      display:grid;grid-template-columns:1.12fr .88fr;gap:18px;
+    }
+    .calendar{
+      overflow:hidden;
+    }
+    .calendar-head{
+      display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;
+    }
+    .calendar-week, .calendar-days{
+      display:grid;grid-template-columns:repeat(7,1fr);gap:8px;
+    }
+    .calendar-week div{
+      text-align:center;padding:8px 0;color:var(--muted);font-size:12px;font-weight:700;
+    }
+    .day{
+      min-height:100px;background:white;border:1px solid var(--line);border-radius:14px;padding:10px;cursor:pointer;
+      display:flex;flex-direction:column;gap:6px;transition:.15s;
+    }
+    .day:hover{transform:translateY(-1px)}
+    .day.out{opacity:.38}
+    .day.selected{border-color:var(--mint-deep);box-shadow:inset 0 0 0 2px rgba(57,182,179,.18)}
+    .day.today{background:#f1fffe}
+    .day-num{font-weight:700;font-size:13px}
+    .event-pill{
+      font-size:11px;padding:5px 7px;border-radius:999px;background:#eef9f9;color:#256463;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      border:1px solid #daf0ef;
+    }
+    .event-pill.high{background:#fff2ef;color:#c35a42;border-color:#ffd4c8}
+    .event-pill.mid{background:#fff8e8;color:#91622d;border-color:#ffe2a5}
+    .event-pill.low{background:#eefbf4;color:#24724d;border-color:#cdeedb}
+    .list{
+      display:flex;flex-direction:column;gap:10px;
+    }
+    .task-item, .trip-item, .asset-item, .event-row, .chat-bubble{
+      background:white;border:1px solid var(--line);border-radius:14px;padding:12px 14px;
+    }
+    .task-item{
+      display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
+    }
+    .task-item.done .task-title{text-decoration:line-through;color:#9eb2b1}
+    .task-meta{font-size:12px;color:var(--muted);margin-top:4px}
+    .badge{
+      display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800;
+      background:#eef7ff;color:#3464b0;
+    }
+    .badge.high{background:#fff1ef;color:#c6523a}
+    .badge.mid{background:#fff6e4;color:#9a6b29}
+    .badge.low{background:#eefbf4;color:#317956}
+    .right .card{padding:16px}
+    .profile{
+      display:grid;grid-template-columns:84px 1fr;gap:14px;align-items:center;
+    }
+    .avatar{
+      width:84px;height:84px;border-radius:18px;
+      background:linear-gradient(135deg,#d8f3f2,#9ad8d5);
+      display:grid;place-items:center;font-size:34px;
+      border:1px solid var(--line);
+    }
+    .meter{
+      height:10px;background:#eef6f6;border-radius:999px;overflow:hidden;margin-top:8px;
+    }
+    .meter > span{display:block;height:100%;background:linear-gradient(90deg,var(--mint),var(--mint-deep));border-radius:inherit}
+    .mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .kpi{
+      background:white;border:1px solid var(--line);border-radius:16px;padding:12px;
+    }
+    .bars{display:flex;align-items:flex-end;gap:10px;height:180px;padding-top:8px}
+    .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px}
+    .bar{
+      width:100%;max-width:28px;border-radius:12px 12px 6px 6px;background:#dbefee;position:relative;overflow:hidden;
+    }
+    .bar span{
+      position:absolute;left:0;right:0;bottom:0;
+      background:linear-gradient(180deg,var(--mint) 0%, var(--mint-deep) 100%);
+      border-radius:inherit;
+    }
+    .bar.alt span{background:linear-gradient(180deg,#ffb171 0%, #ff8a57 100%)}
+    .bar-label{font-size:11px;color:var(--muted)}
+    .split{
+      display:grid;grid-template-columns:1fr 1fr;gap:14px;
+    }
+    .section{display:none}
+    .section.active{display:block}
+    .chat-box{display:flex;flex-direction:column;gap:12px;max-height:360px;overflow:auto;padding-right:4px}
+    .chat-bubble.user{background:#ecfbfb;border-color:#cef0ef}
+    .chat-role{font-size:11px;font-weight:800;color:var(--muted);margin-bottom:6px}
+    .chat-role.user{color:#1f7f7c}
+    .quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .small{font-size:12px}
+    .hint{
+      padding:12px;border-radius:14px;background:#f1fbfb;border:1px dashed #bfe4e2;color:#386b69;
+      font-size:13px;line-height:1.55;
+    }
+    .table{
+      width:100%;border-collapse:collapse;font-size:13px;
+    }
+    .table th, .table td{
+      padding:10px;border-bottom:1px solid #e9f2f2;text-align:left;
+    }
+    .table th{color:var(--muted);font-size:12px}
+    .empty{
+      padding:18px;border-radius:14px;border:1px dashed var(--line);text-align:center;color:var(--muted);background:#fbffff;
+    }
+    .footer-note{
+      color:#4b6c6a;font-size:12px;padding:2px 4px 0;
+    }
+    @media (max-width:1200px){
+      .shell{grid-template-columns:80px 1fr}
+      .right{grid-column:1 / -1}
+      .hero-grid{grid-template-columns:repeat(2,1fr)}
+      .content-grid, .panel-grid{grid-template-columns:1fr}
+    }
+    @media (max-width:780px){
+      body{padding:12px}
+      .shell{grid-template-columns:1fr;padding:12px;border-radius:22px}
+      .sidebar{
+        position:static;height:auto;flex-direction:row;overflow:auto;justify-content:flex-start;padding:10px;border-radius:18px;
+      }
+      .menu,.bottom{flex-direction:row}
+      .nav-btn{min-width:78px}
+      .frame-title h2{font-size:22px}
+      .hero-grid,.quick-grid,.split,.mini-grid{grid-template-columns:1fr}
+      .calendar-week,.calendar-days{gap:6px}
+      .day{min-height:76px}
+    }
+  </style>
+</head>
+<body>
+  <div class="frame-title">
+    <h2>업무 종합 html 대시보드</h2>
+    <div class="tagline">캘린더 직접 입력 · To-do 체크 · 카드 업로드 분석 · 운영 관리 · AI 업무/법률 어시스턴트</div>
+  </div>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="logo">👑</div>
+      <div class="menu" id="menu"></div>
+      <div class="bottom">
+        <button class="nav-btn" id="saveAllBtn"><span class="icon">💾</span><span>저장</span></button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="hero">
+        <div class="hero-top">
+          <div class="toolbar-wrap">
+            <div class="chip active density-chip" data-density="default">기본 밀도</div>
+            <div class="chip density-chip" data-density="compact">정보 밀도 높게</div>
+            <div class="chip density-chip" data-density="comfortable">여백 많게</div>
+          </div>
+          <div class="toolbar-wrap">
+            <input class="inp" id="globalSearch" style="width:260px" placeholder="메뉴/일정/할 일 검색" />
+            <button class="btn secondary" id="todayBtn">오늘로 이동</button>
+          </div>
+        </div>
+        <div class="hero-grid">
+          <div class="stat">
+            <div class="label">이번 주 일정</div>
+            <div class="value" id="weeklyEventCount">0건</div>
+            <div class="delta">▲ 일정 누락 방지</div>
+          </div>
+          <div class="stat">
+            <div class="label">진행 중 To-do</div>
+            <div class="value" id="openTaskCount">0개</div>
+            <div class="delta down">● 마감 우선 확인</div>
+          </div>
+          <div class="stat">
+            <div class="label">휴가 잔여일</div>
+            <div class="value" id="vacationRemain">0일</div>
+            <div class="delta">▲ 사용 가능</div>
+          </div>
+          <div class="stat">
+            <div class="label">법인카드 최근 분석</div>
+            <div class="value" id="cardTotalValue">₩0</div>
+            <div class="delta">▲ 업로드 데이터 기준</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section active" id="dashboardSection">
+        <div class="content-grid">
+          <div class="card">
+            <div class="toolbar">
+              <h3>업무 비중 / 월간 추이</h3>
+              <div class="toolbar-wrap">
+                <button class="chip workloadPreset" data-doc="55" data-meet="20" data-external="25">문서외주 중심</button>
+                <button class="chip workloadPreset" data-doc="25" data-meet="50" data-external="25">회의 외주 중심</button>
+                <button class="chip workloadPreset" data-doc="20" data-meet="25" data-external="55">외부 응대 중심</button>
+              </div>
+            </div>
+            <div class="split">
+              <div>
+                <label class="small muted">문서외주 <span id="docPctLabel">45%</span></label>
+                <input type="range" id="docPct" min="0" max="100" value="45" class="inp" />
+                <label class="small muted">회의 외주 <span id="meetPctLabel">30%</span></label>
+                <input type="range" id="meetPct" min="0" max="100" value="30" class="inp" />
+                <label class="small muted">외부 응대 <span id="externalPctLabel">25%</span></label>
+                <input type="range" id="externalPct" min="0" max="100" value="25" class="inp" />
+                <div class="hint" style="margin-top:12px">
+                  세 비중의 합이 100%가 아니어도 자동으로 상대 비율을 계산합니다.
+                </div>
+              </div>
+              <div>
+                <div class="bars" id="workloadBars"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>오늘의 실행 현황</h3>
+            <div class="mini-grid">
+              <div class="kpi">
+                <div class="muted small">완료율</div>
+                <div style="font-size:26px;font-weight:800" id="completionRate">0%</div>
+                <div class="meter"><span id="completionMeter" style="width:0%"></span></div>
+              </div>
+              <div class="kpi">
+                <div class="muted small">오늘 일정</div>
+                <div style="font-size:26px;font-weight:800" id="todayEventCount">0건</div>
+                <div class="meter"><span id="todayEventMeter" style="width:0%"></span></div>
+              </div>
+              <div class="kpi">
+                <div class="muted small">출장 대기</div>
+                <div style="font-size:26px;font-weight:800" id="pendingTrips">0건</div>
+                <div class="meter"><span id="tripMeter" style="width:0%"></span></div>
+              </div>
+              <div class="kpi">
+                <div class="muted small">비품 부족</div>
+                <div style="font-size:26px;font-weight:800" id="lowStockCount">0개</div>
+                <div class="meter"><span id="stockMeter" style="width:0%"></span></div>
+              </div>
+            </div>
+            <div class="hint" style="margin-top:14px">
+              이 화면은 단순 전시용이 아니라 입력한 데이터가 모두 브라우저에 저장됩니다. 새로고침 후에도 유지됩니다.
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-grid" style="margin-top:20px">
+          <div class="card">
+            <div class="toolbar">
+              <h3>다가오는 일정</h3>
+              <button class="btn secondary" data-go="calendar">캘린더에서 추가</button>
+            </div>
+            <div id="upcomingEvents" class="list"></div>
+          </div>
+
+          <div class="card">
+            <div class="toolbar">
+              <h3>우선순위 To-do</h3>
+              <button class="btn secondary" data-go="todo">할 일 관리</button>
+            </div>
+            <div id="priorityTasks" class="list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="calendarSection">
+        <div class="panel-grid">
+          <div class="card calendar">
+            <div class="calendar-head">
+              <div class="toolbar-wrap">
+                <button class="btn secondary" id="prevMonth">◀</button>
+                <h3 id="calendarTitle" style="margin:0"></h3>
+                <button class="btn secondary" id="nextMonth">▶</button>
+              </div>
+              <button class="btn flat" id="addTodaySchedule">오늘 일정 빠르게 추가</button>
+            </div>
+            <div class="calendar-week">
+              <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+            </div>
+            <div class="calendar-days" id="calendarDays"></div>
+          </div>
+
+          <div class="card">
+            <h3>일정 등록 / 수정</h3>
+            <div class="toolbar-wrap" style="margin-bottom:10px">
+              <input class="inp" id="eventDate" type="date" />
+              <select id="eventPriority">
+                <option value="high">높음</option>
+                <option value="mid" selected>보통</option>
+                <option value="low">낮음</option>
+              </select>
+            </div>
+            <input class="inp" id="eventTitle" placeholder="예: 광고주 정기 미팅" />
+            <textarea id="eventNote" placeholder="회의 링크, 장소, 준비자료 등을 입력하세요"></textarea>
+            <div class="toolbar-wrap">
+              <button class="btn" id="saveEventBtn">일정 저장</button>
+              <button class="btn secondary" id="resetEventBtn">입력 초기화</button>
+            </div>
+            <div style="height:12px"></div>
+            <h3 style="margin-top:8px">선택한 날짜 일정</h3>
+            <div id="selectedDateLabel" class="muted small" style="margin-bottom:10px">날짜를 선택하세요</div>
+            <div id="eventListForDay" class="list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="todoSection">
+        <div class="panel-grid">
+          <div class="card">
+            <div class="toolbar">
+              <h3>To-do List</h3>
+              <div class="toolbar-wrap">
+                <button class="chip taskFilter active" data-filter="all">전체</button>
+                <button class="chip taskFilter" data-filter="open">진행중</button>
+                <button class="chip taskFilter" data-filter="done">완료</button>
+              </div>
+            </div>
+            <div class="toolbar-wrap" style="margin-bottom:10px">
+              <input class="inp" id="taskTitle" placeholder="새 할 일을 입력하세요" />
+              <input class="inp" id="taskDue" type="date" style="max-width:160px" />
+            </div>
+            <div class="toolbar-wrap" style="margin-bottom:10px">
+              <select id="taskPriority">
+                <option value="high">우선순위 높음</option>
+                <option value="mid" selected>우선순위 보통</option>
+                <option value="low">우선순위 낮음</option>
+              </select>
+              <input class="inp" id="taskOwner" placeholder="담당자" style="max-width:160px" />
+              <button class="btn" id="addTaskBtn">할 일 추가</button>
+            </div>
+            <div id="taskList" class="list"></div>
+          </div>
+
+          <div class="card">
+            <h3>실행 팁</h3>
+            <div class="hint">
+              <b>추천 운영 방식</b><br>
+              1) 일정 등록 시 회의/외부응대 내용을 캘린더에 먼저 입력<br>
+              2) 후속 작업은 To-do로 분리<br>
+              3) 마감이 있는 업무는 담당자와 기한을 함께 기록<br>
+              4) 완료 체크만 해도 완료율 카드가 즉시 반영됩니다
+            </div>
+            <div style="height:14px"></div>
+            <h3>오늘 마감 임박</h3>
+            <div id="todayDeadlineList" class="list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="opsSection">
+        <div class="content-grid">
+          <div class="card">
+            <div class="toolbar"><h3>비품관리</h3></div>
+            <div class="toolbar-wrap" style="margin-bottom:10px">
+              <input class="inp" id="assetName" placeholder="비품명" />
+              <input class="inp" id="assetQty" type="number" min="0" placeholder="수량" style="max-width:120px" />
+              <input class="inp" id="assetMin" type="number" min="0" placeholder="최소 보유" style="max-width:120px" />
+            </div>
+            <div class="toolbar-wrap" style="margin-bottom:10px">
+              <input class="inp" id="assetOwner" placeholder="관리 담당자" />
+              <select id="assetStatus">
+                <option value="정상">정상</option>
+                <option value="보충 필요">보충 필요</option>
+                <option value="수리 필요">수리 필요</option>
+              </select>
+              <button class="btn" id="addAssetBtn">비품 추가</button>
+            </div>
+            <div id="assetList" class="list"></div>
+          </div>
+
+          <div class="card">
+            <div class="toolbar"><h3>출장 신청</h3></div>
+            <div class="toolbar-wrap" style="margin-bottom:10px">
+              <input class="inp" id="tripPurpose" placeholder="출장 목적" />
+              <input class="inp" id="tripDestination" placeholder="출장지" />
+            </div>
+            <div class="toolbar-wrap" style="margin-bottom:10px">
+              <input class="inp" id="tripStart" type="date" />
+              <input class="inp" id="tripEnd" type="date" />
+              <select id="tripStatus">
+                <option value="승인 대기">승인 대기</option>
+                <option value="승인 완료">승인 완료</option>
+                <option value="반려">반려</option>
+              </select>
+            </div>
+            <textarea id="tripMemo" placeholder="예산, 교통수단, 미팅 대상 등을 적어주세요"></textarea>
+            <div class="toolbar-wrap">
+              <button class="btn" id="addTripBtn">출장 신청 저장</button>
+            </div>
+            <div style="height:12px"></div>
+            <div id="tripList" class="list"></div>
+          </div>
+        </div>
+
+        <div class="panel-grid" style="margin-top:20px">
+          <div class="card">
+            <h3>휴가 잔여일 관리</h3>
+            <div class="toolbar-wrap">
+              <input class="inp" id="vacTotal" type="number" step="0.5" placeholder="연차 총일수" />
+              <input class="inp" id="vacUsed" type="number" step="0.5" placeholder="사용 연차" />
+              <button class="btn" id="saveVacationBtn">저장</button>
+            </div>
+            <div style="height:10px"></div>
+            <div class="kpi">
+              <div class="muted small">현재 잔여</div>
+              <div style="font-size:28px;font-weight:800" id="vacRemainCard">0일</div>
+              <div class="meter"><span id="vacMeter" style="width:0%"></span></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>운영 메모</h3>
+            <textarea id="opsMemo" placeholder="운영 관련 메모를 남겨두세요. 예: 프린터 토너 6월 초 보충 필요"></textarea>
+            <div class="toolbar-wrap"><button class="btn" id="saveOpsMemoBtn">메모 저장</button></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="cardSection">
+        <div class="content-grid">
+          <div class="card">
+            <div class="toolbar">
+              <h3>법인카드 사용내역 업로드 분석</h3>
+              <div class="toolbar-wrap">
+                <button class="chip sampleBtn" data-sample="month">월간 샘플</button>
+                <button class="chip sampleBtn" data-sample="quarter">분기 샘플</button>
+                <button class="chip sampleBtn" data-sample="year">연간 샘플</button>
+              </div>
+            </div>
+            <div class="hint" style="margin-bottom:10px">
+              CSV/JSON 업로드 형식 예시: date,merchant,category,amount
+            </div>
+            <div class="toolbar-wrap">
+              <input class="inp" id="cardFile" type="file" accept=".csv,.json" />
+              <button class="btn" id="analyzeCardBtn">파일 분석</button>
+            </div>
+            <div style="height:12px"></div>
+            <div id="cardInsightText" class="hint">데이터를 업로드하거나 샘플 버튼을 눌러 분석을 시작하세요.</div>
+            <div style="height:12px"></div>
+            <div class="split">
+              <div class="kpi">
+                <div class="muted small">총 사용액</div>
+                <div style="font-size:28px;font-weight:800" id="cardTotal">₩0</div>
+              </div>
+              <div class="kpi">
+                <div class="muted small">평균 결제액</div>
+                <div style="font-size:28px;font-weight:800" id="cardAvg">₩0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>지출 카테고리 TOP</h3>
+            <div id="cardCategoryList" class="list"></div>
+            <div style="height:12px"></div>
+            <h3>반복 가맹점</h3>
+            <div id="merchantList" class="list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="aiWorkSection">
+        <div class="content-grid">
+          <div class="card">
+            <div class="toolbar">
+              <h3>업무 AI 어시스턴트</h3>
+              <div class="toolbar-wrap">
+                <button class="chip workPrompt">회의 요약 작성</button>
+                <button class="chip workPrompt">외부 응대 메일 초안</button>
+                <button class="chip workPrompt">문서 외주 브리프 정리</button>
+                <button class="chip workPrompt">오늘 일정 기반 우선순위 추천</button>
+              </div>
+            </div>
+            <div class="chat-box" id="workChat"></div>
+            <div class="toolbar-wrap" style="margin-top:10px">
+              <input class="inp" id="workInput" placeholder="업무 관련 요청을 입력하세요" />
+              <button class="btn" id="sendWorkChat">전송</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>자동 활용되는 컨텍스트</h3>
+            <div class="hint">
+              이 데모는 실제 활용감을 높이기 위해 현재 브라우저에 저장된 일정, To-do, 카드 분석 결과를 참고해 답변하도록 구성했습니다.
+            </div>
+            <div style="height:12px"></div>
+            <table class="table">
+              <tr><th>컨텍스트</th><th>활용 방식</th></tr>
+              <tr><td>일정</td><td>오늘/이번 주 우선순위 정리</td></tr>
+              <tr><td>To-do</td><td>마감 임박 작업 요약</td></tr>
+              <tr><td>법인카드</td><td>지출 패턴 코멘트</td></tr>
+              <tr><td>운영 메모</td><td>실무 체크리스트 생성</td></tr>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="aiLawSection">
+        <div class="content-grid">
+          <div class="card">
+            <div class="toolbar">
+              <h3>AI 변호사</h3>
+              <div class="toolbar-wrap">
+                <button class="chip lawPrompt">계약서 검토 체크리스트</button>
+                <button class="chip lawPrompt">NDA 핵심 조항</button>
+                <button class="chip lawPrompt">업무위탁 리스크</button>
+                <button class="chip lawPrompt">개인정보 위탁 점검</button>
+              </div>
+            </div>
+            <div class="chat-box" id="lawChat"></div>
+            <div class="toolbar-wrap" style="margin-top:10px">
+              <input class="inp" id="lawInput" placeholder="법률 검토가 필요한 내용을 입력하세요" />
+              <button class="btn" id="sendLawChat">전송</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>korean-law-mcp 연동 구조</h3>
+            <div class="hint">
+              실제 서버 연결 전 단계에서도 운영이 가능하도록 UI와 프로세스를 먼저 구현했습니다.<br><br>
+              <b>권장 구조</b><br>
+              1) 프론트 HTML → 내부 API 브리지<br>
+              2) API 브리지 → korean-law-mcp 서버 호출<br>
+              3) 응답을 조항/체크리스트/요약 형식으로 가공<br><br>
+              <b>현재 버전</b><br>
+              - UI/프롬프트/질문 이력 저장 지원<br>
+              - 실제 MCP 서버 호출은 추후 연결 지점만 남겨둠
+            </div>
+            <div style="height:12px"></div>
+            <textarea id="mcpConfigPreview" readonly>{
+  "mcpServers": {
+    "korean-law": {
+      "transport": "http",
+      "url": "https://YOUR-MCP-ENDPOINT.example.com/mcp"
+    }
+  }
+}</textarea>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer-note">저장 위치: 브라우저 localStorage · 별도 서버 없이도 개인/팀용 운영 보드처럼 활용 가능</div>
+    </main>
+
+    <aside class="right">
+      <div class="card">
+        <div class="profile">
+          <div class="avatar">🧠</div>
+          <div>
+            <div class="muted small">Admin Workspace</div>
+            <div style="font-size:22px;font-weight:800">실무형 대시보드</div>
+            <div class="muted small">캘린더 · To-do · 운영 · AI 도구 통합</div>
+            <div class="meter"><span style="width:82%"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>오늘 일정 미리보기</h3>
+        <div id="todayEventsPreview" class="list"></div>
+      </div>
+
+      <div class="card">
+        <h3>이번 주 카드/운영 인사이트</h3>
+        <div id="summaryInsight" class="hint">아직 분석 데이터가 없습니다.</div>
+      </div>
+
+      <div class="card">
+        <h3>빠른 실행</h3>
+        <div class="quick-grid">
+          <button class="btn" data-go="calendar">일정 추가</button>
+          <button class="btn" data-go="todo">To-do 추가</button>
+          <button class="btn" data-go="ops">출장 신청</button>
+          <button class="btn" data-go="card">카드 분석</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => [...document.querySelectorAll(sel)];
+    const fmt = n => '₩' + Number(n||0).toLocaleString('ko-KR');
+    const fmtDate = d => {
+      const x = new Date(d);
+      if (Number.isNaN(x.getTime())) return d;
+      return x.toLocaleDateString('ko-KR', {year:'numeric', month:'short', day:'numeric', weekday:'short'});
+    };
+    const sameDate = (a,b) => new Date(a).toDateString() === new Date(b).toDateString();
+    const todayISO = () => {
+      const d = new Date();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const day = String(d.getDate()).padStart(2,'0');
+      return `${d.getFullYear()}-${m}-${day}`;
+    };
+
+    const menuItems = [
+      {id:'dashboard', icon:'🏠', label:'대시보드'},
+      {id:'calendar', icon:'🗓️', label:'캘린더'},
+      {id:'todo', icon:'✅', label:'To-do'},
+      {id:'ops', icon:'🧰', label:'운영관리'},
+      {id:'card', icon:'💳', label:'카드분석'},
+      {id:'aiWork', icon:'🤖', label:'업무AI'},
+      {id:'aiLaw', icon:'⚖️', label:'AI변호사'},
+    ];
+
+    const sampleData = {
+      month: [
+        {date:'2026-05-02', merchant:'스타카페', category:'식비', amount:8300},
+        {date:'2026-05-03', merchant:'패스트프린트', category:'인쇄/비품', amount:45200},
+        {date:'2026-05-04', merchant:'KTX', category:'교통', amount:59800},
+        {date:'2026-05-04', merchant:'네이버클라우드', category:'SaaS', amount:120000},
+        {date:'2026-05-06', merchant:'스타카페', category:'식비', amount:11200},
+        {date:'2026-05-09', merchant:'오피스마트', category:'인쇄/비품', amount:76000},
+        {date:'2026-05-12', merchant:'택시', category:'교통', amount:19400},
+        {date:'2026-05-15', merchant:'외주디자인랩', category:'외주비', amount:450000},
+        {date:'2026-05-15', merchant:'스타카페', category:'식비', amount:9100},
+        {date:'2026-05-18', merchant:'미팅룸예약', category:'회의', amount:88000}
+      ],
+      quarter: [
+        {date:'2026-03-07', merchant:'오피스마트', category:'인쇄/비품', amount:93000},
+        {date:'2026-03-18', merchant:'미팅룸예약', category:'회의', amount:124000},
+        {date:'2026-04-03', merchant:'KTX', category:'교통', amount:64800},
+        {date:'2026-04-09', merchant:'외주디자인랩', category:'외주비', amount:520000},
+        {date:'2026-04-14', merchant:'스타카페', category:'식비', amount:16700},
+        {date:'2026-05-02', merchant:'스타카페', category:'식비', amount:8300},
+        {date:'2026-05-09', merchant:'오피스마트', category:'인쇄/비품', amount:76000},
+        {date:'2026-05-15', merchant:'외주디자인랩', category:'외주비', amount:450000},
+        {date:'2026-05-18', merchant:'미팅룸예약', category:'회의', amount:88000}
+      ],
+      year: [
+        {date:'2026-01-09', merchant:'외주디자인랩', category:'외주비', amount:600000},
+        {date:'2026-01-22', merchant:'클라우드워크', category:'SaaS', amount:98000},
+        {date:'2026-02-11', merchant:'오피스마트', category:'인쇄/비품', amount:45000},
+        {date:'2026-02-27', merchant:'KTX', category:'교통', amount:105000},
+        {date:'2026-03-05', merchant:'스타카페', category:'식비', amount:12100},
+        {date:'2026-03-17', merchant:'미팅룸예약', category:'회의', amount:117000},
+        {date:'2026-04-09', merchant:'외주디자인랩', category:'외주비', amount:520000},
+        {date:'2026-04-22', merchant:'오피스마트', category:'인쇄/비품', amount:78000},
+        {date:'2026-05-15', merchant:'외주디자인랩', category:'외주비', amount:450000},
+        {date:'2026-05-18', merchant:'미팅룸예약', category:'회의', amount:88000},
+        {date:'2026-06-03', merchant:'클라우드워크', category:'SaaS', amount:98000},
+        {date:'2026-06-09', merchant:'택시', category:'교통', amount:21400}
+      ]
+    };
+
+    const defaultState = {
+      tasks: [
+        {id:1, title:'5월 정기 보고서 초안 작성', due:todayISO(), priority:'high', owner:'김규홍', done:false},
+        {id:2, title:'광고주 회의 후속 메일 발송', due:todayISO(), priority:'mid', owner:'김규홍', done:false},
+      ],
+      events: [
+        {id:1, date:todayISO(), title:'주간 운영 스탠드업', priority:'mid', note:'10:00 / 줌 링크 확인'},
+        {id:2, date:todayISO(), title:'외주 계약 검토 미팅', priority:'high', note:'14:00 / 체크리스트 준비'}
+      ],
+      assets: [
+        {id:1, name:'A4용지', qty:3, min:5, owner:'운영팀', status:'보충 필요'},
+        {id:2, name:'프린터 토너', qty:2, min:1, owner:'운영팀', status:'정상'}
+      ],
+      trips: [
+        {id:1, purpose:'부산 협력사 미팅', destination:'부산', start:todayISO(), end:todayISO(), status:'승인 대기', memo:'KTX 이동 예정'}
+      ],
+      vacation: {total:15, used:4.5},
+      opsMemo:'외주 계약서 검토 전 NDA 문구 재확인 필요',
+      workChat:[
+        {role:'assistant', text:'안녕하세요. 일정, To-do, 운영 메모를 바탕으로 오늘 해야 할 일을 정리해드릴 수 있습니다.'}
+      ],
+      lawChat:[
+        {role:'assistant', text:'안녕하세요. 계약/NDA/업무위탁/개인정보 위탁 관련 체크리스트 형식으로 도와드릴 수 있습니다.'}
+      ],
+      cardRecords: [],
+      density:'default'
+    };
+
+    let state = loadState();
+    let currentSection = 'dashboard';
+    let taskFilter = 'all';
+    let selectedDate = todayISO();
+    let calendarCursor = new Date();
+
+    function loadState(){
+      try{
+        const saved = JSON.parse(localStorage.getItem('aiDashboardStateV2'));
+        return saved ? {...defaultState, ...saved} : structuredClone(defaultState);
+      }catch(e){
+        return structuredClone(defaultState);
+      }
+    }
+    function saveState(){
+      localStorage.setItem('aiDashboardStateV2', JSON.stringify(state));
+      renderAll();
+    }
+
+    function initMenu(){
+      const menu = $('#menu');
+      menu.innerHTML = menuItems.map(item => `
+        <button class="nav-btn ${item.id===currentSection?'active':''}" data-section="${item.id}">
+          <span class="icon">${item.icon}</span><span>${item.label}</span>
+        </button>
+      `).join('');
+      $$('#menu .nav-btn').forEach(btn=>btn.onclick=()=>switchSection(btn.dataset.section));
+      $('#saveAllBtn').onclick = () => { saveState(); alert('현재 입력 내용이 저장되었습니다.'); };
+      $$('[data-go]').forEach(btn => btn.onclick = ()=>switchSection(btn.dataset.go));
+    }
+
+    function switchSection(id){
+      currentSection = id;
+      $$('.section').forEach(s => s.classList.remove('active'));
+      $(`#${id}Section`).classList.add('active');
+      $$('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.section===id));
+    }
+
+    function renderDensity(){
+      const map = {
+        default: {gap:'20px', pad:'18px'},
+        compact: {gap:'14px', pad:'14px'},
+        comfortable: {gap:'26px', pad:'22px'}
+      }[state.density || 'default'];
+      document.documentElement.style.setProperty('--card-gap', map.gap);
+      $$('.density-chip').forEach(chip=>chip.classList.toggle('active', chip.dataset.density===state.density));
+      document.querySelectorAll('.card, .stat').forEach(el => { el.style.padding = map.pad; });
+    }
+
+    function renderDashboardMetrics(){
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate()-now.getDay());
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate()+6);
+      const weekEvents = state.events.filter(e => {
+        const d = new Date(e.date);
+        return d >= startOfWeek && d <= endOfWeek;
+      });
+      $('#weeklyEventCount').textContent = `${weekEvents.length}건`;
+      const open = state.tasks.filter(t=>!t.done).length;
+      $('#openTaskCount').textContent = `${open}개`;
+      const remain = Math.max(0, (Number(state.vacation.total)||0) - (Number(state.vacation.used)||0));
+      $('#vacationRemain').textContent = `${remain}일`;
+      $('#vacRemainCard').textContent = `${remain}일`;
+      const meter = state.vacation.total ? (remain / state.vacation.total)*100 : 0;
+      $('#vacMeter').style.width = `${Math.max(0, Math.min(100, meter))}%`;
+
+      const total = state.cardRecords.reduce((a,b)=>a+Number(b.amount||0),0);
+      $('#cardTotalValue').textContent = fmt(total);
+      const doneCount = state.tasks.filter(t=>t.done).length;
+      const rate = state.tasks.length ? Math.round((doneCount/state.tasks.length)*100) : 0;
+      $('#completionRate').textContent = `${rate}%`;
+      $('#completionMeter').style.width = `${rate}%`;
+      const todayEvents = state.events.filter(e=>e.date===todayISO());
+      $('#todayEventCount').textContent = `${todayEvents.length}건`;
+      $('#todayEventMeter').style.width = `${Math.min(100, todayEvents.length*25)}%`;
+      const pending = state.trips.filter(t=>t.status==='승인 대기').length;
+      $('#pendingTrips').textContent = `${pending}건`;
+      $('#tripMeter').style.width = `${Math.min(100, pending*30)}%`;
+      const lowStock = state.assets.filter(a=>Number(a.qty)<=Number(a.min) || a.status!=='정상').length;
+      $('#lowStockCount').textContent = `${lowStock}개`;
+      $('#stockMeter').style.width = `${Math.min(100, lowStock*25)}%`;
+      const summary = total
+        ? `최근 카드 데이터 총액은 ${fmt(total)}입니다. ${
+          getTopCategoryText() ? '가장 큰 비중은 '+getTopCategoryText()+'입니다.' : ''
+        } 운영 메모: ${state.opsMemo || '없음'}`
+        : `카드 분석 데이터가 아직 없습니다. 운영 메모: ${state.opsMemo || '없음'}`;
+      $('#summaryInsight').textContent = summary;
+    }
+
+    function renderWorkload(){
+      let doc = Number($('#docPct').value), meet = Number($('#meetPct').value), external = Number($('#externalPct').value);
+      const sum = doc+meet+external || 1;
+      const items = [
+        ['문서외주', Math.round(doc/sum*100)],
+        ['회의 외주', Math.round(meet/sum*100)],
+        ['외부 응대', Math.round(external/sum*100)],
+      ];
+      $('#docPctLabel').textContent = `${items[0][1]}%`;
+      $('#meetPctLabel').textContent = `${items[1][1]}%`;
+      $('#externalPctLabel').textContent = `${items[2][1]}%`;
+      $('#workloadBars').innerHTML = items.map((it, idx)=>`
+        <div class="bar-col">
+          <div style="font-size:12px;font-weight:800">${it[1]}%</div>
+          <div class="bar ${idx===1?'alt':''}" style="height:150px"><span style="height:${it[1]}%"></span></div>
+          <div class="bar-label">${it[0]}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderCalendar(){
+      const y = calendarCursor.getFullYear();
+      const m = calendarCursor.getMonth();
+      $('#calendarTitle').textContent = `${y}년 ${m+1}월`;
+      const first = new Date(y,m,1);
+      const startDay = first.getDay();
+      const daysInMonth = new Date(y,m+1,0).getDate();
+      const prevDays = new Date(y,m,0).getDate();
+      const totalCells = 42;
+      const cells = [];
+      for(let i=0;i<startDay;i++){
+        cells.push({date:new Date(y,m-1,prevDays-startDay+i+1), out:true});
+      }
+      for(let d=1;d<=daysInMonth;d++){
+        cells.push({date:new Date(y,m,d), out:false});
+      }
+      while(cells.length < totalCells){
+        const nextDay = cells.length - (startDay + daysInMonth) + 1;
+        cells.push({date:new Date(y,m+1,nextDay), out:true});
+      }
+      $('#calendarDays').innerHTML = cells.map(c=>{
+        const iso = c.date.toISOString().slice(0,10);
+        const dayEvents = state.events.filter(e=>e.date===iso).slice(0,2);
+        const classes = ['day', c.out?'out':'', iso===selectedDate?'selected':'', iso===todayISO()?'today':''].join(' ');
+        return `<div class="${classes}" data-date="${iso}">
+          <div class="day-num">${c.date.getDate()}</div>
+          ${dayEvents.map(ev=>`<div class="event-pill ${ev.priority}">${ev.title}</div>`).join('')}
+          ${state.events.filter(e=>e.date===iso).length>2 ? `<div class="small muted">+${state.events.filter(e=>e.date===iso).length-2} more</div>` : ''}
+        </div>`;
+      }).join('');
+      $$('#calendarDays .day').forEach(day => day.onclick = ()=>{
+        selectedDate = day.dataset.date;
+        $('#eventDate').value = selectedDate;
+        renderCalendar();
+        renderSelectedDateEvents();
+      });
+      $('#selectedDateLabel').textContent = `${fmtDate(selectedDate)} 일정`;
+    }
+
+    function renderSelectedDateEvents(){
+      const list = state.events.filter(e=>e.date===selectedDate).sort((a,b)=>a.id-b.id);
+      $('#eventListForDay').innerHTML = list.length ? list.map(ev=>`
+        <div class="event-row">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+            <div>
+              <div style="font-weight:700">${ev.title}</div>
+              <div class="task-meta">${ev.note || '메모 없음'}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="badge ${ev.priority}">${ev.priority==='high'?'높음':ev.priority==='mid'?'보통':'낮음'}</span>
+              <button class="btn secondary small delete-event" data-id="${ev.id}">삭제</button>
+            </div>
+          </div>
+        </div>
+      `).join('') : `<div class="empty">선택한 날짜에 등록된 일정이 없습니다.</div>`;
+      $$('.delete-event').forEach(btn => btn.onclick = ()=>{
+        state.events = state.events.filter(e=>e.id != btn.dataset.id);
+        saveState();
+      });
+    }
+
+    function renderTasks(){
+      let tasks = [...state.tasks];
+      if(taskFilter==='open') tasks = tasks.filter(t=>!t.done);
+      if(taskFilter==='done') tasks = tasks.filter(t=>t.done);
+      tasks.sort((a,b)=>(a.done-b.done) || String(a.due).localeCompare(String(b.due)));
+      $('#taskList').innerHTML = tasks.length ? tasks.map(t=>`
+        <div class="task-item ${t.done?'done':''}">
+          <input type="checkbox" ${t.done?'checked':''} class="task-check" data-id="${t.id}" />
+          <div>
+            <div class="task-title" style="font-weight:700">${t.title}</div>
+            <div class="task-meta">${t.owner || '담당 미지정'} · ${t.due || '기한 없음'}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="badge ${t.priority}">${t.priority==='high'?'높음':t.priority==='mid'?'보통':'낮음'}</span>
+            <button class="btn secondary delete-task" data-id="${t.id}">삭제</button>
+          </div>
+        </div>
+      `).join('') : `<div class="empty">조건에 맞는 할 일이 없습니다.</div>`;
+      $$('.task-check').forEach(ch => ch.onchange = ()=>{
+        const task = state.tasks.find(t=>t.id==ch.dataset.id);
+        if(task){ task.done = ch.checked; saveState(); }
+      });
+      $$('.delete-task').forEach(btn => btn.onclick = ()=>{
+        state.tasks = state.tasks.filter(t=>t.id != btn.dataset.id);
+        saveState();
+      });
+
+      const today = todayISO();
+      const imminent = state.tasks.filter(t => !t.done && t.due && t.due <= today).slice(0,5);
+      $('#todayDeadlineList').innerHTML = imminent.length ? imminent.map(t=>`
+        <div class="task-item">
+          <div>⏰</div><div><div style="font-weight:700">${t.title}</div><div class="task-meta">${t.due}</div></div>
+          <span class="badge ${t.priority}">${t.priority==='high'?'높음':t.priority==='mid'?'보통':'낮음'}</span>
+        </div>
+      `).join('') : `<div class="empty">오늘 기준 급한 작업이 없습니다.</div>`;
+
+      $('#priorityTasks').innerHTML = state.tasks.filter(t=>!t.done).sort((a,b)=>{
+        const order={high:0,mid:1,low:2};
+        return (order[a.priority]-order[b.priority]) || String(a.due).localeCompare(String(b.due));
+      }).slice(0,4).map(t=>`
+        <div class="task-item">
+          <input type="checkbox" class="task-check-home" data-id="${t.id}" ${t.done?'checked':''}/>
+          <div><div style="font-weight:700">${t.title}</div><div class="task-meta">${t.due || '기한 없음'} · ${t.owner || '담당 미지정'}</div></div>
+          <span class="badge ${t.priority}">${t.priority==='high'?'높음':t.priority==='mid'?'보통':'낮음'}</span>
+        </div>
+      `).join('') || `<div class="empty">진행 중인 우선순위 작업이 없습니다.</div>`;
+      $$('.task-check-home').forEach(ch => ch.onchange = ()=>{
+        const task = state.tasks.find(t=>t.id==ch.dataset.id);
+        if(task){ task.done = ch.checked; saveState(); }
+      });
+    }
+
+    function renderOps(){
+      $('#assetList').innerHTML = state.assets.length ? state.assets.map(a=>`
+        <div class="asset-item">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+            <div>
+              <div style="font-weight:700">${a.name}</div>
+              <div class="task-meta">수량 ${a.qty} / 최소 ${a.min} · 담당 ${a.owner || '-'}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="badge ${Number(a.qty)<=Number(a.min)||a.status!=='정상'?'high':'low'}">${a.status}</span>
+              <button class="btn secondary del-asset" data-id="${a.id}">삭제</button>
+            </div>
+          </div>
+        </div>
+      `).join('') : `<div class="empty">등록된 비품이 없습니다.</div>`;
+      $$('.del-asset').forEach(btn=>btn.onclick=()=>{ state.assets = state.assets.filter(a=>a.id!=btn.dataset.id); saveState(); });
+
+      $('#tripList').innerHTML = state.trips.length ? state.trips.map(t=>`
+        <div class="trip-item">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+            <div>
+              <div style="font-weight:700">${t.purpose}</div>
+              <div class="task-meta">${t.destination} · ${t.start} ~ ${t.end}</div>
+              <div class="task-meta">${t.memo || ''}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="badge ${t.status==='승인 대기'?'mid':t.status==='승인 완료'?'low':'high'}">${t.status}</span>
+              <button class="btn secondary del-trip" data-id="${t.id}">삭제</button>
+            </div>
+          </div>
+        </div>
+      `).join('') : `<div class="empty">출장 신청 내역이 없습니다.</div>`;
+      $$('.del-trip').forEach(btn=>btn.onclick=()=>{ state.trips = state.trips.filter(t=>t.id!=btn.dataset.id); saveState(); });
+
+      $('#vacTotal').value = state.vacation.total;
+      $('#vacUsed').value = state.vacation.used;
+      $('#opsMemo').value = state.opsMemo || '';
+    }
+
+    function getTopCategoryText(){
+      const map = {};
+      state.cardRecords.forEach(r=> map[r.category]=(map[r.category]||0)+Number(r.amount||0));
+      const top = Object.entries(map).sort((a,b)=>b[1]-a[1])[0];
+      return top ? `${top[0]} (${fmt(top[1])})` : '';
+    }
+
+    function analyzeCardRecords(records){
+      state.cardRecords = records.map((r,i)=>({
+        id:i+1,
+        date:r.date,
+        merchant:r.merchant,
+        category:r.category,
+        amount:Number(r.amount)
+      })).filter(r=>r.date&&r.merchant&&r.category&&!Number.isNaN(r.amount));
+      const total = state.cardRecords.reduce((a,b)=>a+b.amount,0);
+      const avg = state.cardRecords.length ? Math.round(total/state.cardRecords.length) : 0;
+      $('#cardTotal').textContent = fmt(total);
+      $('#cardAvg').textContent = fmt(avg);
+
+      const catMap = {};
+      const merchantMap = {};
+      let weekendSpend = 0;
+      state.cardRecords.forEach(r=>{
+        catMap[r.category]=(catMap[r.category]||0)+r.amount;
+        merchantMap[r.merchant]=(merchantMap[r.merchant]||0)+1;
+        const day = new Date(r.date).getDay();
+        if(day===0||day===6) weekendSpend += r.amount;
+      });
+      const cats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+      const merchants = Object.entries(merchantMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+      $('#cardCategoryList').innerHTML = cats.length ? cats.map(([k,v])=>`
+        <div class="event-row"><div style="display:flex;justify-content:space-between"><b>${k}</b><span>${fmt(v)}</span></div></div>
+      `).join('') : `<div class="empty">분석 결과가 없습니다.</div>`;
+
+      $('#merchantList').innerHTML = merchants.length ? merchants.map(([k,v])=>`
+        <div class="event-row"><div style="display:flex;justify-content:space-between"><b>${k}</b><span>${v}회</span></div></div>
+      `).join('') : `<div class="empty">반복 가맹점이 없습니다.</div>`;
+
+      const topCat = cats[0];
+      const repeated = merchants[0];
+      $('#cardInsightText').innerHTML = `
+        총 <b>${state.cardRecords.length}건</b>을 분석했습니다. 
+        가장 지출이 큰 카테고리는 <b>${topCat ? topCat[0] : '-'}</b>, 
+        가장 많이 반복된 가맹점은 <b>${repeated ? repeated[0] : '-'}</b>입니다.<br>
+        주말 결제액은 <b>${fmt(weekendSpend)}</b>이며, 전체 대비 비중을 함께 확인해보는 것이 좋습니다.
+      `;
+      saveState();
+    }
+
+    function parseCSV(text){
+      const lines = text.trim().split(/\r?\n/);
+      const headers = lines.shift().split(',').map(v=>v.trim());
+      return lines.map(line=>{
+        const cols = line.split(',').map(v=>v.trim());
+        const obj = {};
+        headers.forEach((h,i)=>obj[h]=cols[i]);
+        return obj;
+      });
+    }
+
+    function renderUpcoming(){
+      const today = new Date(todayISO());
+      const upcoming = state.events
+        .filter(e=>new Date(e.date) >= today)
+        .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+        .slice(0,6);
+      $('#upcomingEvents').innerHTML = upcoming.length ? upcoming.map(e=>`
+        <div class="event-row">
+          <div style="display:flex;justify-content:space-between;gap:10px">
+            <div><div style="font-weight:700">${e.title}</div><div class="task-meta">${fmtDate(e.date)}</div></div>
+            <span class="badge ${e.priority}">${e.priority==='high'?'높음':e.priority==='mid'?'보통':'낮음'}</span>
+          </div>
+        </div>
+      `).join('') : `<div class="empty">다가오는 일정이 없습니다.</div>`;
+
+      const todayEvents = state.events.filter(e=>e.date===todayISO());
+      $('#todayEventsPreview').innerHTML = todayEvents.length ? todayEvents.map(e=>`
+        <div class="event-row">
+          <div style="font-weight:700">${e.title}</div>
+          <div class="task-meta">${e.note || '메모 없음'}</div>
+        </div>
+      `).join('') : `<div class="empty">오늘 일정이 없습니다.</div>`;
+    }
+
+    function renderChats(){
+      const renderChat = (selector, arr) => {
+        $(selector).innerHTML = arr.map(m=>`
+          <div class="chat-bubble ${m.role==='user'?'user':''}">
+            <div class="chat-role ${m.role==='user'?'user':''}">${m.role==='user' ? '사용자' : '어시스턴트'}</div>
+            <div style="white-space:pre-wrap; line-height:1.6">${m.text}</div>
+          </div>
+        `).join('');
+        $(selector).scrollTop = $(selector).scrollHeight;
+      };
+      renderChat('#workChat', state.workChat);
+      renderChat('#lawChat', state.lawChat);
+    }
+
+    function workAssistantReply(prompt){
+      const todayTasks = state.tasks.filter(t=>!t.done).slice(0,3).map(t=>`- ${t.title} (${t.due || '기한 없음'})`).join('\n') || '- 현재 진행중 작업 없음';
+      const todayEvents = state.events.filter(e=>e.date===todayISO()).map(e=>`- ${e.title}`).join('\n') || '- 오늘 일정 없음';
+      if(prompt.includes('회의') || prompt.includes('요약')){
+        return `회의 요약 초안 템플릿입니다.\n\n1. 논의 목적\n2. 주요 결정사항\n3. 담당자별 액션 아이템\n4. 다음 일정\n\n오늘 일정 참고:\n${todayEvents}`;
+      }
+      if(prompt.includes('메일')){
+        return `외부 응대 메일 초안:\n안녕하세요. 요청 주신 내용 확인했습니다. 현재 진행 상황과 필요한 자료를 정리하여 회신드립니다. 세부 일정은 아래와 같습니다...\n\n오늘 일정 기반 참고:\n${todayEvents}`;
+      }
+      if(prompt.includes('우선순위')){
+        return `오늘 우선순위 추천입니다.\n${todayTasks}\n\n우선순위 판단 기준: 오늘 일정, 마감일, 미완료 상태를 함께 고려했습니다.`;
+      }
+      return `요청 내용을 바탕으로 실행 초안을 정리했습니다.\n\n- 오늘 일정:\n${todayEvents}\n- 현재 진행중 To-do:\n${todayTasks}\n- 운영 메모:\n${state.opsMemo || '없음'}`;
+    }
+
+    function lawAssistantReply(prompt){
+      if(prompt.includes('NDA')){
+        return `NDA 검토 핵심 체크리스트\n1. 비밀정보 정의 범위가 과도하지 않은지\n2. 예외 조항(공개 정보, 독자 개발 등)이 있는지\n3. 보존/파기 의무가 명확한지\n4. 손해배상 및 관할 조항이 과도하지 않은지\n\n※ 실제 계약 체결 전에는 법률 전문가 최종 검토가 필요합니다.`;
+      }
+      if(prompt.includes('개인정보')){
+        return `개인정보 위탁 점검 포인트\n1. 위탁 목적과 범위 특정\n2. 재위탁 제한 여부\n3. 안전성 확보조치 문구\n4. 파기/반환 절차\n5. 침해사고 통지 체계`;
+      }
+      if(prompt.includes('업무위탁')){
+        return `업무위탁 계약 리스크 포인트\n- 결과물 지식재산권 귀속\n- 하자보수 및 수정 범위\n- 일정 지연 시 책임\n- 대금 지급 조건\n- 비밀유지/자료 반납 의무`;
+      }
+      return `법률 검토 초안입니다.\n- 계약 목적과 범위를 먼저 특정하세요.\n- 책임, 손해배상, 해지, 관할 조항을 별도로 확인하세요.\n- 개인정보/비밀정보가 포함되면 위탁 및 NDA 조항을 함께 검토하세요.\n\n※ 이 답변은 참고용입니다. 실제 자문은 변호사 검토가 필요합니다.`;
+    }
+
+    function renderAll(){
+      initMenu();
+      renderDensity();
+      renderDashboardMetrics();
+      renderWorkload();
+      renderCalendar();
+      renderSelectedDateEvents();
+      renderTasks();
+      renderOps();
+      renderUpcoming();
+      renderChats();
+    }
+
+    // events
+    document.addEventListener('click', (e)=>{
+      if(e.target.classList.contains('density-chip')){
+        state.density = e.target.dataset.density;
+        saveState();
+      }
+      if(e.target.classList.contains('taskFilter')){
+        $$('.taskFilter').forEach(x=>x.classList.remove('active'));
+        e.target.classList.add('active');
+        taskFilter = e.target.dataset.filter;
+        renderTasks();
+      }
+      if(e.target.classList.contains('sampleBtn')){
+        analyzeCardRecords(sampleData[e.target.dataset.sample]);
+      }
+      if(e.target.classList.contains('workPrompt')){
+        $('#workInput').value = e.target.textContent;
+      }
+      if(e.target.classList.contains('lawPrompt')){
+        $('#lawInput').value = e.target.textContent;
+      }
+      if(e.target.classList.contains('workloadPreset')){
+        $('#docPct').value = e.target.dataset.doc;
+        $('#meetPct').value = e.target.dataset.meet;
+        $('#externalPct').value = e.target.dataset.external;
+        renderWorkload();
+      }
+    });
+
+    ['#docPct','#meetPct','#externalPct'].forEach(sel=>$(sel).oninput=renderWorkload);
+
+    $('#prevMonth').onclick = ()=>{ calendarCursor.setMonth(calendarCursor.getMonth()-1); renderCalendar(); };
+    $('#nextMonth').onclick = ()=>{ calendarCursor.setMonth(calendarCursor.getMonth()+1); renderCalendar(); };
+    $('#todayBtn').onclick = ()=>{
+      selectedDate = todayISO();
+      calendarCursor = new Date();
+      renderCalendar(); renderSelectedDateEvents(); renderUpcoming();
+    };
+    $('#addTodaySchedule').onclick = ()=>{
+      selectedDate = todayISO(); $('#eventDate').value = todayISO(); switchSection('calendar'); renderCalendar(); renderSelectedDateEvents();
+    };
+
+    $('#saveEventBtn').onclick = ()=>{
+      const date = $('#eventDate').value || selectedDate || todayISO();
+      const title = $('#eventTitle').value.trim();
+      const note = $('#eventNote').value.trim();
+      const priority = $('#eventPriority').value;
+      if(!title) return alert('일정 제목을 입력하세요.');
+      state.events.push({id:Date.now(), date, title, note, priority});
+      $('#eventTitle').value=''; $('#eventNote').value=''; selectedDate=date;
+      saveState();
+    };
+    $('#resetEventBtn').onclick = ()=>{ $('#eventTitle').value=''; $('#eventNote').value=''; $('#eventPriority').value='mid'; };
+
+    $('#addTaskBtn').onclick = ()=>{
+      const title = $('#taskTitle').value.trim();
+      if(!title) return alert('할 일 제목을 입력하세요.');
+      state.tasks.push({
+        id:Date.now(),
+        title,
+        due:$('#taskDue').value,
+        priority:$('#taskPriority').value,
+        owner:$('#taskOwner').value.trim(),
+        done:false
+      });
+      $('#taskTitle').value=''; $('#taskDue').value=''; $('#taskOwner').value='';
+      saveState();
+    };
+
+    $('#addAssetBtn').onclick = ()=>{
+      const name = $('#assetName').value.trim();
+      if(!name) return alert('비품명을 입력하세요.');
+      state.assets.push({
+        id:Date.now(), name,
+        qty:Number($('#assetQty').value||0),
+        min:Number($('#assetMin').value||0),
+        owner:$('#assetOwner').value.trim(),
+        status:$('#assetStatus').value
+      });
+      ['#assetName','#assetQty','#assetMin','#assetOwner'].forEach(s=>$(s).value='');
+      $('#assetStatus').value='정상';
+      saveState();
+    };
+
+    $('#addTripBtn').onclick = ()=>{
+      const purpose = $('#tripPurpose').value.trim();
+      if(!purpose) return alert('출장 목적을 입력하세요.');
+      state.trips.push({
+        id:Date.now(),
+        purpose,
+        destination:$('#tripDestination').value.trim(),
+        start:$('#tripStart').value,
+        end:$('#tripEnd').value,
+        status:$('#tripStatus').value,
+        memo:$('#tripMemo').value.trim()
+      });
+      ['#tripPurpose','#tripDestination','#tripStart','#tripEnd','#tripMemo'].forEach(s=>$(s).value='');
+      $('#tripStatus').value='승인 대기';
+      saveState();
+    };
+
+    $('#saveVacationBtn').onclick = ()=>{
+      state.vacation.total = Number($('#vacTotal').value||0);
+      state.vacation.used = Number($('#vacUsed').value||0);
+      saveState();
+    };
+    $('#saveOpsMemoBtn').onclick = ()=>{
+      state.opsMemo = $('#opsMemo').value.trim();
+      saveState();
+      alert('운영 메모를 저장했습니다.');
+    };
+
+    $('#analyzeCardBtn').onclick = async ()=>{
+      const file = $('#cardFile').files[0];
+      if(!file) return alert('CSV 또는 JSON 파일을 선택하세요.');
+      const text = await file.text();
+      let data;
+      try{
+        data = file.name.endsWith('.json') ? JSON.parse(text) : parseCSV(text);
+      }catch(e){
+        return alert('파일 형식을 읽지 못했습니다. CSV/JSON 형식을 확인하세요.');
+      }
+      analyzeCardRecords(data);
+    };
+
+    $('#sendWorkChat').onclick = ()=>{
+      const text = $('#workInput').value.trim();
+      if(!text) return;
+      state.workChat.push({role:'user', text});
+      state.workChat.push({role:'assistant', text:workAssistantReply(text)});
+      $('#workInput').value='';
+      saveState();
+    };
+
+    $('#sendLawChat').onclick = ()=>{
+      const text = $('#lawInput').value.trim();
+      if(!text) return;
+      state.lawChat.push({role:'user', text});
+      state.lawChat.push({role:'assistant', text:lawAssistantReply(text)});
+      $('#lawInput').value='';
+      saveState();
+    };
+
+    $('#globalSearch').oninput = e => {
+      const q = e.target.value.trim().toLowerCase();
+      if(!q){
+        renderUpcoming(); renderTasks(); return;
+      }
+      const matchingEvents = state.events.filter(x => (x.title+x.note+x.date).toLowerCase().includes(q)).slice(0,6);
+      $('#upcomingEvents').innerHTML = matchingEvents.length ? matchingEvents.map(e=>`
+        <div class="event-row">
+          <div style="font-weight:700">${e.title}</div>
+          <div class="task-meta">${fmtDate(e.date)} · ${e.note || ''}</div>
+        </div>`).join('') : `<div class="empty">검색된 일정이 없습니다.</div>`;
+      const matchingTasks = state.tasks.filter(x => (x.title+x.owner+(x.due||'')).toLowerCase().includes(q)).slice(0,6);
+      $('#priorityTasks').innerHTML = matchingTasks.length ? matchingTasks.map(t=>`
+        <div class="task-item">
+          <div>🔎</div><div><div style="font-weight:700">${t.title}</div><div class="task-meta">${t.owner || '-'} · ${t.due || '기한 없음'}</div></div>
+          <span class="badge ${t.priority}">${t.priority}</span>
+        </div>`).join('') : `<div class="empty">검색된 할 일이 없습니다.</div>`;
+    };
+
+    $('#eventDate').value = todayISO();
+    if(!state.cardRecords?.length){ state.cardRecords = sampleData.month; }
+    analyzeCardRecords(state.cardRecords);
+    renderAll();
+  </script>
+</body>
+</html>
